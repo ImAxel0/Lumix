@@ -9,7 +9,7 @@ Source code isn't available yet during development stage.**
 Several open source libraries are being used:
 - Interface is entirely developed using [dear-imgui](https://github.com/ocornut/imgui) with the [ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) wrapper.
 - Audio is handled by [NAudio](https://github.com/naudio/NAudio) library while midi by [DryWetMidi](https://github.com/melanchall/drywetmidi).
-- VST's support is possible to [VST.NET](https://github.com/obiwanjacobi/vst.net).
+- VST's support is possible by [VST.NET](https://github.com/obiwanjacobi/vst.net).
 
 ### Currently Working Features :ok_hand:
 - Audio files playback
@@ -41,7 +41,7 @@ Several open source libraries are being used:
 - Parameters automations
 - Custom audio/midi files folder paths
 - Custom vst's folder paths
-- Project saving, loading and export*
+- Project saving, loading and export
 ---
 
 ### 15-01-2025
