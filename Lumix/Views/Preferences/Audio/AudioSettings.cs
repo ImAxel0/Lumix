@@ -24,9 +24,14 @@ public static class AudioSettings
 
     public static void Init(bool driverChange = false)
     {
-        //OutputDevice?.Stop();
         OutputDevice?.Dispose();
 
+#if LOCAL_DEV
+        var asio = new AsioOut("M-Audio AIR 192 4 ASIO");
+        OutputDevice = asio;
+        AudioDriver = AudioDriver.Asio;
+        DeviceName = asio.DriverName;
+#else
         if (AsioOut.GetDriverNames().Length > 0 && AudioDriver == AudioDriver.Asio)
         {
             var asio = new AsioOut(0);
@@ -41,7 +46,7 @@ public static class AudioSettings
             AudioDriver = AudioDriver.WaveOut;
             DeviceName = waveOut.DeviceNumber.ToString();
         }
-
+#endif
         if (driverChange)
         {
             UpdateAudioOutput(OutputDevice, DeviceName);

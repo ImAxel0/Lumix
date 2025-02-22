@@ -51,7 +51,7 @@ public static class ArrangementView
             _arrangementScrollX = target;
 
             // Resize waveforms or other elements if necessary
-            Tracks.ForEach(track =>
+            Tracks.ToList().ForEach(track =>
             {
                 if (track.TrackType == TrackType.Audio)
                 {
@@ -96,7 +96,7 @@ public static class ArrangementView
             ImGui.SetScrollX(Math.Clamp(mousePosInContentX * zoomFactor - mousePosInWindowX, 0, float.PositiveInfinity));
 
             // Resize waveforms or other elements if necessary
-            Tracks.ForEach(track =>
+            Tracks.ToList().ForEach(track =>
             {
                 if (track.TrackType == TrackType.Audio)
                 {
@@ -124,17 +124,27 @@ public static class ArrangementView
         }
     }
 
-    public static AudioTrack NewAudioTrack(string name)
+    public static AudioTrack NewAudioTrack(string name, int index = -1)
     {
         AudioTrack track = new(name);
-        Tracks.Add(track);
+        if (index == -1)
+        {
+            Tracks.Add(track);
+            return track;
+        }
+        Tracks.Insert(index, track);
         return track;
     }
 
-    public static MidiTrack NewMidiTrack(string name)
+    public static MidiTrack NewMidiTrack(string name, int index = -1)
     {
         MidiTrack track = new(name);
-        Tracks.Add(track);
+        if (index == -1)
+        {
+            Tracks.Add(track);
+            return track;
+        }
+        Tracks.Insert(index, track);
         return track;
     }
 
@@ -169,6 +179,18 @@ public static class ArrangementView
             {
 
             });
+        }
+
+        // Create new audio track after selected track
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.T, false))
+        {
+            DevicesView.SelectedTrack = NewAudioTrack($"Audio Track {Tracks.Count}", Tracks.IndexOf(DevicesView.SelectedTrack) + 1);
+        }
+
+        // Create new midi track after selected track
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.T, false))
+        {
+            DevicesView.SelectedTrack = NewMidiTrack($"Midi Track {Tracks.Count}", Tracks.IndexOf(DevicesView.SelectedTrack) + 1);
         }
     }
 
@@ -383,7 +405,7 @@ public static class ArrangementView
                 */
                 // Getting longest clip in arrangement to calculate arrangement width
                 List<Clip> clips = new();
-                Tracks.ForEach(t => clips.AddRange(t.Clips));
+                Tracks.ToList().ForEach(t => clips.AddRange(t.Clips));
                 float minLength = ImGui.GetContentRegionAvail().X;
                 _maxClipLength = minLength;
                 if (clips.Count > 0)
@@ -401,7 +423,7 @@ public static class ArrangementView
                 ImGui.EndChild();
                 ImGui.PopStyleColor();
 
-                foreach (var track in Tracks)
+                foreach (var track in Tracks.ToList())
                 {
                     if (!track.Enabled)
                         ImGui.BeginDisabled();
@@ -441,7 +463,7 @@ public static class ArrangementView
                 }
 
                 int trackIndex = 0;
-                foreach (var track in Tracks)
+                foreach (var track in Tracks.ToList())
                 {
                     if (_zoomedThisFrame) // If zoomed on this frame, skip controls rendering cause of visible artifact
                         continue;
@@ -479,30 +501,8 @@ public static class ArrangementView
                             }
                             clip.HasPlayed = true;
                         }
-
-                        /*
-                        if (TimeLine.IsRunning && TimeLine.GetTimeInSeconds() >= clip.Time && !clip.HasPlayed)
-                        {
-                            float timeOffset = TimeLine.GetTimeInSeconds() - clip.Time + clip.StartOffset;
-                            if (clip is AudioClip audioClip && clip.Enabled)
-                            {
-                                clip.Play(audioClip.Clip.AudioFileReader, timeOffset, clip.EndOffset);
-                            }
-                            else if (clip is MidiClip midiClip && clip.Enabled)
-                            {
-                                clip.Play(midiClip.MidiClipData.MidiFile, timeOffset * TopBarControls.Bpm / 120f);
-                            }
-                            clip.HasPlayed = true;
-                        }
-                        */
                     }
                     trackIndex++;
-                }
-
-                var deletedTrack = Tracks.FirstOrDefault(t => t.DeleteNextFrame);
-                if (deletedTrack != null)
-                {
-                    Tracks.Remove(deletedTrack);
                 }
 
                 ImGui.EndChild();

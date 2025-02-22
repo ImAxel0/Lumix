@@ -505,7 +505,7 @@ public abstract class Track
             if (UiElement.Toggle($"{Fontaudio.Solo}##track_solo", _solo, new Vector4(0.17f, 0.49f, 0.85f, 1f), new(35, 25)))
             {
                 _solo = !_solo;
-                ArrangementView.Tracks.ForEach(track =>
+                ArrangementView.Tracks.ToList().ForEach(track =>
                 {
                     if (track == this)
                     {
@@ -591,7 +591,7 @@ public abstract class Track
         }
         if (ImGui.MenuItem("Delete", "Del"))
         {
-            DeleteNextFrame = true;
+            ArrangementView.Tracks.Remove(this);
         }
         ImGui.Spacing();
         ImGui.Separator();
@@ -605,11 +605,11 @@ public abstract class Track
         ImGui.Spacing();
         if (ImGui.MenuItem("Insert Audio Track", "Ctrl+T"))
         {
-
+            ArrangementView.NewAudioTrack($"Audio Track {ArrangementView.Tracks.Count}", ArrangementView.Tracks.IndexOf(this) + 1);
         }
         if (ImGui.MenuItem("Insert Midi Track", "Ctrl+Shift+T"))
         {
-
+            ArrangementView.NewMidiTrack($"Midi Track {ArrangementView.Tracks.Count}", ArrangementView.Tracks.IndexOf(this) + 1);
         }
         ImGui.PopStyleColor();
     }
@@ -617,7 +617,6 @@ public abstract class Track
 
     // flag of popup menu
     private bool _renameRequested;
-    public bool DeleteNextFrame { get; private set; }
 
     private bool _hasDropped = false; // Flag to prevent multiple additions during one drop
 }
