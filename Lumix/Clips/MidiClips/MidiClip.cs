@@ -54,7 +54,7 @@ public class MidiClip : Clip
 
     protected override long GetClipDuration()
     {
-        return TimeLineV2.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds);
+        return TimeLineV2.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, false);
         //return (float)_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
     }
 

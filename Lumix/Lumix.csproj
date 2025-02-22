@@ -7,7 +7,12 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>Resources/Icons/lumix.ico</ApplicationIcon>
-    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Platforms>x64;x86</Platforms>
+  </PropertyGroup>
+
+  <!-- IF YOU WANT TO RUN THE DAW IN DEBUG MODE REMOVE OR COMMENT OUT THE FOLLOWING CONSTANT DEFINITION -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>LOCAL_DEV</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

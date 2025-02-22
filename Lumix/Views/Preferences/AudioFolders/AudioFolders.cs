@@ -2,7 +2,16 @@
 
 public class AudioFolders
 {
-    public static List<string> FoldersPath { get; set; } = new();
+    public static List<string> FoldersPath { get; set; } = new()
+    {
+#if LOCAL_DEV
+        "C:\\Users\\Alex\\Desktop\\Sample",
+        "C:\\Users\\Alex\\Desktop\\Reference",
+        "C:\\Users\\Alex\\Desktop\\Midi",
+        "C:\\Users\\Alex\\Desktop\\Downloads"
+#endif
+    };
+
     public static string SelectedFolder { get; private set; } = string.Empty;
 
     public static void SelectFolder(string folderPath)

@@ -191,7 +191,11 @@ public class SidebarView
                                 ShowAudioEffectsTreeNodes(category);
                             break;
                         case BrowserTabs.Plugins:
+#if LOCAL_DEV
+                            string pluginsPath = "C:\\Program Files\\Steinberg\\vstplugins";
+#else
                             string pluginsPath = PluginsPreferences.VST2PluginsPath;
+#endif
                             if (!string.IsNullOrWhiteSpace(pluginsPath))
                             {
                                 ShowPluginsDirectory(pluginsPath);
