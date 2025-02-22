@@ -9,7 +9,9 @@
 > **This repository is intended to showcase progress, provide updates, and occasionally share work in progress versions of the project as it evolves.
 Pull requests or any sort of help isn't accepted for the time being since the daw is still barebone.**
 
-> **Source is provided as is. If compiling it, expect crashes, unfinished and partially working features.**
+> :warning:**Source is provided as is. If compiling it, expect crashes, unfinished and partially working features.**
+
+> :information_source: **Project must be compiled either as x86/x64. If compiling in debug mode, remove LOCAL_DEV constant define inside .csproj file**
 
 ---
 
