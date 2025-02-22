@@ -13,6 +13,8 @@ using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.Views.Arrangement;
 using Lumix.ImGuiExtensions;
+using Lumix.Views.Preferences.Audio;
+using Lumix.Plugins.BuiltIn;
 
 namespace Lumix.Tracks;
 
@@ -27,7 +29,7 @@ public abstract class Track
     public abstract TrackType TrackType { get; }
 
     public TrackEngine Engine { get; protected set; }
-    public string Id { get; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     private string _name = string.Empty;
     public string Name { get => _name; protected set { _name = value; } }
@@ -425,6 +427,31 @@ public abstract class Track
         ImGui.PopStyleColor(1);
         InfoBox.SetInfoData("Track name", "Name of the track.");
 
+
+        if (UiElement.Button($"{FontAwesome6.ArrowUp}", new(22, 25)))
+        {
+            var copy = this;
+            int idx = ArrangementView.Tracks.IndexOf(this);
+            if (idx > 0)
+            {
+                var target = ArrangementView.Tracks[idx - 1];
+                ArrangementView.Tracks[idx] = target;
+                ArrangementView.Tracks[idx - 1] = copy;
+            }
+        }
+        ImGui.SameLine();
+        if (UiElement.Button($"{FontAwesome6.ArrowDown}", new(22, 25)))
+        {
+            var copy = this;
+            int idx = ArrangementView.Tracks.IndexOf(this);
+            if (idx < ArrangementView.Tracks.Count - 1)
+            {
+                var target = ArrangementView.Tracks[idx + 1];
+                ArrangementView.Tracks[idx] = target;
+                ArrangementView.Tracks[idx + 1] = copy;
+            }
+        }
+
         ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.GetFrameHeightWithSpacing() - 5);
         var trackIcon = TrackType == TrackType.Audio ? Fontaudio.LogoAudiobus : FontAwesome6.BarsStaggered;
         var iconFont = TrackType == TrackType.Audio ? Fontaudio.IconFontPtr : ImGui.GetIO().Fonts.Fonts[0];
@@ -587,7 +614,91 @@ public abstract class Track
         }
         if (ImGui.MenuItem("Duplicate", "Ctrl+D"))
         {
+            if (this is AudioTrack)
+            {
+                // Create new track and copy data
+                var track = ArrangementView.NewAudioTrack(this.Name, ArrangementView.Tracks.IndexOf(this) + 1);
+                foreach (AudioClip clip in Clips.Cast<AudioClip>())
+                {
+                    var copy_clip = new AudioClip(track, clip.Clip, clip.StartTick) { 
+                        Enabled = clip.Enabled,
+                        Color = clip.Color
+                    };
+                    track.Clips.Add(copy_clip);
+                }
+                track._enabled = this.Enabled;
+                track._volume = this.Volume;
+                track._pan = this.Pan;
+                track._solo = this.Solo;
+                track._recordOnStart = this.RecordOnStart;
+                track._color = this.Color;
 
+                // Copy audio engine with plugins chain || TODO: COPY PLUGIN SETTINGS
+                track.Engine.PluginChainSampleProvider.RemoveAllPlugins();
+                foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
+                {
+                    var plug = fxPlugin.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                    else
+                    {
+                        var builtIn = Activator.CreateInstance(fxPlugin.GetType());
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                    }
+                }
+            }
+            else if (this is MidiTrack)
+            {
+                // Create new track and copy data
+                var track = ArrangementView.NewMidiTrack(this.Name, ArrangementView.Tracks.IndexOf(this) + 1);
+                foreach (MidiClip clip in Clips.Cast<MidiClip>())
+                {
+                    var copy_clip = new MidiClip(track, clip.MidiClipData, clip.StartTick) {
+                        Enabled = clip.Enabled,
+                        Color = clip.Color
+                    };
+                    track.Clips.Add(copy_clip);
+                }
+                track._enabled = this.Enabled;
+                track._volume = this.Volume;
+                track._pan = this.Pan;
+                track._solo = this.Solo;
+                track._recordOnStart = this.RecordOnStart;
+                track._color = this.Color;
+
+                // Copy midi engine with plugins chain || TODO: COPY PLUGIN SETTINGS
+                track.Engine.PluginChainSampleProvider.RemoveAllPlugins();
+                var vsti = this.Engine.PluginChainSampleProvider.PluginInstrument;
+                if (vsti != null)
+                {
+                    var plug = vsti.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                }
+                foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
+                {
+                    var plug = fxPlugin.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                    else
+                    {
+                        var builtIn = Activator.CreateInstance(fxPlugin.GetType());
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                    }
+                }
+            }         
         }
         if (ImGui.MenuItem("Delete", "Del"))
         {
