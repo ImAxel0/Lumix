@@ -361,6 +361,8 @@ public class PianoRoll
         long beatSpacing = TimeLineV2.PPQ;
         long barSpacing = (long)(beatSpacing * _beatsPerBar);
 
+        float pixelsPerTick = _pixelsPerTick;
+
         long gridSpacing = barSpacing;
 
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
@@ -379,6 +381,15 @@ public class PianoRoll
             Vector2 lineStart = _windowPos + new Vector2(KeyWidth, row * _noteHeight * (_vZoom * 10) - _scrollY);
             Vector2 lineEnd = _windowPos + new Vector2(KeyWidth + _windowSize.X - KeyWidth, row * _noteHeight * (_vZoom * 10) - _scrollY);
             drawList.AddLine(lineStart, lineEnd, gridColor2);
+        }
+
+        float minTextSpacing = 60f;
+        if (pixelsPerTick * gridSpacing < minTextSpacing)
+        {
+            while (pixelsPerTick * gridSpacing < minTextSpacing)
+            {
+                gridSpacing += barSpacing;
+            }
         }
 
         // Bars:Beats:Ticks timeline

@@ -332,11 +332,15 @@ public abstract class Track
             }
             else if (duplicated is MidiClip midiClip)
             {
-                var copy = new MidiClip(this as MidiTrack, midiClip.MidiClipData, midiClip.StartTick + midiClip.DurationTicks);
-                Clips.Add(copy);
+                // TODO: DUPLICATED DOESN'T PLAY
                 ArrangementView.SelectedClips.Clear();
-                ArrangementView.SelectedClips.Add(copy);
-                SetDraggedClip(copy);
+                var copy_clip = new MidiClip(this as MidiTrack, midiClip.MidiClipData, midiClip.StartTick + midiClip.DurationTicks)
+                {
+                    Enabled = midiClip.Enabled,
+                    Color = midiClip.Color
+                };
+                this.Clips.Add(copy_clip);
+                SetDraggedClip(copy_clip);
                 duplicated.DuplicateRequested = false;
             }
         }
@@ -628,7 +632,11 @@ public abstract class Track
                 }
                 track._enabled = this.Enabled;
                 track._volume = this.Volume;
+                float linearVolume = (float)Math.Pow(10, track._volume / 20);
+                track.Engine.StereoSampleProvider.SetGain(linearVolume);
                 track._pan = this.Pan;
+                float mappedPan = track._pan / 50f;
+                track.Engine.StereoSampleProvider.Pan = mappedPan;
                 track._solo = this.Solo;
                 track._recordOnStart = this.RecordOnStart;
                 track._color = this.Color;
@@ -665,7 +673,11 @@ public abstract class Track
                 }
                 track._enabled = this.Enabled;
                 track._volume = this.Volume;
+                float linearVolume = (float)Math.Pow(10, track._volume / 20);
+                track.Engine.StereoSampleProvider.SetGain(linearVolume);
                 track._pan = this.Pan;
+                float mappedPan = track._pan / 50f;
+                track.Engine.StereoSampleProvider.Pan = mappedPan;
                 track._solo = this.Solo;
                 track._recordOnStart = this.RecordOnStart;
                 track._color = this.Color;
@@ -722,6 +734,17 @@ public abstract class Track
         {
             ArrangementView.NewMidiTrack($"Midi Track {ArrangementView.Tracks.Count}", ArrangementView.Tracks.IndexOf(this) + 1);
         }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        if (ImGui.MenuItem("Assign color to clips"))
+        {
+            foreach (var clip in Clips)
+                clip.Color = _color;
+        }
+        ImGui.ColorEdit4("Track Color", ref _color, ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoInputs);
         ImGui.PopStyleColor();
     }
 

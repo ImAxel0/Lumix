@@ -114,11 +114,11 @@ public static class ArrangementView
 
     public static void Init()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 5; i++)
         {
             NewAudioTrack($"Track {Tracks.Count}");
         }
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             NewMidiTrack($"Track {Tracks.Count}");
         }
@@ -241,7 +241,16 @@ public static class ArrangementView
                 long beatSpacing = TimeLineV2.PPQ;
                 long barSpacing = (long)(beatSpacing * TimeLineV2.BeatsPerBar);
 
+                float minTextSpacing = 60f; 
                 long gridSpacing = barSpacing;
+
+                if (pixelsPerTick * gridSpacing < minTextSpacing)
+                {
+                    while (pixelsPerTick * gridSpacing < minTextSpacing)
+                    {
+                        gridSpacing += barSpacing;
+                    }
+                }
 
                 for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
                 {
