@@ -423,10 +423,10 @@ public class PianoRoll
         return ticks * _pixelsPerTick;
     }
 
-    private long SnapToGrid(long tick)
+    public long SnapToGrid(long tick)
     {
         long gridSpacing = (long)(TimeLineV2.PPQ * _beatsPerBar);
-        return (tick / gridSpacing) * gridSpacing;
+        return (long)Math.Round((double)tick / gridSpacing) * gridSpacing;
     }
 
     /// <returns>How many ticks are in one bar</returns>
