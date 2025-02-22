@@ -1,14 +1,17 @@
 <p align="center">
- <img src="https://i.imgur.com/PhXPmxf.png" width="100" height="100" />
+ <img src="https://i.imgur.com/PhXPmxf.png" width="150" height="150" />
 </p>
 
-# Lumix
+# Lumix ![GitHub License](https://img.shields.io/github/license/ImAxel0/Lumix) [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FImAxel0%2FLumix&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Views&edge_flat=false)](https://hits.seeyoufarm.com) ![GitHub Repo stars](https://img.shields.io/github/stars/ImAxel0/Lumix)
+
 **... is a digital audio workstation (DAW) currently under development, with an Ableton Live heavily inspired ui and workflow.**
 
 > **This repository is intended to showcase progress, provide updates, and occasionally share work in progress versions of the project as it evolves.
 Pull requests or any sort of help isn't accepted for the time being since the daw is still barebone.**
 
-> **Source is provided as is. If compiling it, expect crashes, unfinished and partially working features.**
+> :warning:**Source is provided as is. If compiling it, expect crashes, unfinished and partially working features.**
+
+> :information_source: **Project must be compiled either as x86/x64. If compiling in debug mode, remove LOCAL_DEV constant define inside .csproj file**
 
 ---
 
