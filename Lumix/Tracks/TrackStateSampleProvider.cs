@@ -10,28 +10,14 @@ namespace Lumix.Tracks;
 /// </summary>
 public class TrackStateSampleProvider : ISampleProvider
 {
-    private AudioTrack _audioTrack;
-    private MidiTrack _midiTrack;
-    private GroupTrack _groupTrack;
+    private Track _parentTrack;
     private readonly ISampleProvider source;
     public WaveFormat WaveFormat => source.WaveFormat;
 
-    public TrackStateSampleProvider(ISampleProvider source, AudioTrack audioTrack)
+    public TrackStateSampleProvider(ISampleProvider source, Track track)
     {
         this.source = source;
-        _audioTrack = audioTrack;
-    }
-
-    public TrackStateSampleProvider(ISampleProvider source, MidiTrack midiTrack)
-    {
-        this.source = source;
-        _midiTrack = midiTrack;
-    }
-
-    public TrackStateSampleProvider(ISampleProvider source, GroupTrack groupTrack)
-    {
-        this.source = source;
-        _groupTrack = groupTrack;
+        _parentTrack = track;
     }
 
     public int Read(float[] buffer, int offset, int count)
@@ -42,26 +28,11 @@ public class TrackStateSampleProvider : ISampleProvider
             float leftChannel = buffer[offset + i];
             float rightChannel = buffer[offset + i + 1];
 
-            if (_audioTrack != null)
-                if (!_audioTrack.Enabled)
-                {
-                    leftChannel = 0;
-                    rightChannel = 0;
-                }
-
-            if (_midiTrack != null)
-                if (!_midiTrack.Enabled)
-                {
-                    leftChannel = 0;
-                    rightChannel = 0;
-                }
-
-            if (_groupTrack != null)
-                if (!_groupTrack.Enabled)
-                {
-                    leftChannel = 0;
-                    rightChannel = 0;
-                }
+            if (!_parentTrack.Enabled)
+            {
+                leftChannel = 0;
+                rightChannel = 0;
+            }
 
             buffer[offset + i] = leftChannel;
             buffer[offset + i + 1] = rightChannel;

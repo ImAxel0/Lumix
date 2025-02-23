@@ -142,7 +142,7 @@ public abstract class Track
                     {
                         var vst = new VstPlugin(SidebarView.DraggedFilePath);
                         var vstProcessor = new VstAudioProcessor(vst);
-                        if (TrackType == TrackType.Audio)
+                        if (TrackType == TrackType.Audio || TrackType == TrackType.Group)
                         {
                             if (vst.PluginType != VstType.VSTi)
                             {
@@ -152,7 +152,7 @@ public abstract class Track
                             {
                                 vst.Dispose();
                                 User32.MessageBox(IntPtr.Zero,
-                                    "Can't add vst instrument to audio track",
+                                    "Can't add vst instrument to this track",
                                     "Error",
                                     User32.MB_FLAGS.MB_ICONERROR | User32.MB_FLAGS.MB_TOPMOST);
                             }
@@ -557,14 +557,19 @@ public abstract class Track
             }
             Fontaudio.Pop();
             InfoBox.SetInfoData("Solo toggle", "Mute all tracks except this one");
-            ImGui.SameLine();
-            Fontaudio.Push();
-            if (UiElement.Toggle($"{Fontaudio.Armrecording}##track_record", _recordOnStart, new Vector4(0.88f, 0.20f, 0.16f, 1f), new(35, 25)))
+
+            // arm recording
+            if (this.TrackType != TrackType.Group)
             {
-                _recordOnStart = !_recordOnStart;
+                ImGui.SameLine();
+                Fontaudio.Push();
+                if (UiElement.Toggle($"{Fontaudio.Armrecording}##track_record", _recordOnStart, new Vector4(0.88f, 0.20f, 0.16f, 1f), new(35, 25)))
+                {
+                    _recordOnStart = !_recordOnStart;
+                }
+                Fontaudio.Pop();
+                InfoBox.SetInfoData("Track recording", "Start audio recording when record button is pressed");
             }
-            Fontaudio.Pop();
-            InfoBox.SetInfoData("Track recording", "Start audio recording when record button is pressed");
 
             ImGui.Spacing();
 
