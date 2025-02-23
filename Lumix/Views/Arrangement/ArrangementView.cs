@@ -124,10 +124,12 @@ public static class ArrangementView
             NewMidiTrack($"Track {Tracks.Count}");
         }
 
+        /*
         var group = new GroupTrack("Group");
         group.AddTrackToGroup(Tracks[0]);
         group.AddTrackToGroup(Tracks[1]);
         Tracks.Insert(0, group);
+        */
     }
 
     public static AudioTrack NewAudioTrack(string name, int index = -1)
@@ -175,7 +177,7 @@ public static class ArrangementView
         {
             SelectedClips.ForEach(c =>
             {
-
+                c.SetStartTick(Math.Clamp(TimeLineV2.SnapToGrid(c.StartTick + (long)(TimeLineV2.PPQ * TimeLineV2.BeatsPerBar)), 0, long.MaxValue));
             });
         }
 
@@ -183,7 +185,7 @@ public static class ArrangementView
         {
             SelectedClips.ForEach(c =>
             {
-
+                c.SetStartTick(Math.Clamp(TimeLineV2.SnapToGrid(c.StartTick - (long)(TimeLineV2.PPQ * TimeLineV2.BeatsPerBar)), 0, long.MaxValue));
             });
         }
 

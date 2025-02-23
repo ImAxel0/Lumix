@@ -108,8 +108,17 @@ public abstract class Track
         {
             TrackSelectionArea.end = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
         }
-        else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+        else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
         {
+            // Select all clips in drawed area
+            foreach (var clip in Clips)
+            {
+                if ((clip.StartMusicalTime >= TrackSelectionArea.start && clip.EndMusicalTime <= TrackSelectionArea.end)
+                    || clip.StartMusicalTime >= TrackSelectionArea.end && clip.EndMusicalTime <= TrackSelectionArea.start)
+                {
+                    ArrangementView.SelectedClips.Add(clip);
+                }
+            }
             IsAreaSelectionMode = false;
         }
 
