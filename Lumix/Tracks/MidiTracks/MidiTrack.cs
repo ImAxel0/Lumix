@@ -14,7 +14,7 @@ public class MidiTrack : Track
     public MidiTrack(string name = "")
     {
         Name = name;
-        Vector4 trackCol = ImGuiTheme.DefaultColors[new Random().Next(0, ImGuiTheme.DefaultColors.Length)];
+        Vector4 trackCol = ImGuiTheme.GetRandomColor();
         Color = trackCol;
         Engine = new TrackMidiEngine(this, AudioSettings.SampleRate);
         Engine.VolumeMeasured += (sender, e) =>

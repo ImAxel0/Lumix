@@ -16,6 +16,11 @@ public class ImGuiTheme
         HtmlToVec4("#7517C3"),
     };
 
+    public static Vector4 GetRandomColor()
+    {
+        return DefaultColors[new Random().Next(0, ImGuiTheme.DefaultColors.Length)];
+    }
+
     public static Vector4 HtmlToVec4(string htmlColor, float alpha = 1f)
     {
         if (htmlColor == null || htmlColor.Length != 7 || htmlColor[0] != '#')
