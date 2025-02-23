@@ -1,4 +1,5 @@
 ﻿using Lumix.Tracks.AudioTracks;
+using Lumix.Tracks.GroupTracks;
 using Lumix.Tracks.MidiTracks;
 using NAudio.Wave;
 
@@ -11,6 +12,7 @@ public class TrackStateSampleProvider : ISampleProvider
 {
     private AudioTrack _audioTrack;
     private MidiTrack _midiTrack;
+    private GroupTrack _groupTrack;
     private readonly ISampleProvider source;
     public WaveFormat WaveFormat => source.WaveFormat;
 
@@ -24,6 +26,12 @@ public class TrackStateSampleProvider : ISampleProvider
     {
         this.source = source;
         _midiTrack = midiTrack;
+    }
+
+    public TrackStateSampleProvider(ISampleProvider source, GroupTrack groupTrack)
+    {
+        this.source = source;
+        _groupTrack = groupTrack;
     }
 
     public int Read(float[] buffer, int offset, int count)
@@ -43,6 +51,13 @@ public class TrackStateSampleProvider : ISampleProvider
 
             if (_midiTrack != null)
                 if (!_midiTrack.Enabled)
+                {
+                    leftChannel = 0;
+                    rightChannel = 0;
+                }
+
+            if (_groupTrack != null)
+                if (!_groupTrack.Enabled)
                 {
                     leftChannel = 0;
                     rightChannel = 0;

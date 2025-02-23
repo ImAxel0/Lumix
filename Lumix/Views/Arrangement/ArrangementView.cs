@@ -5,6 +5,7 @@ using Lumix.Clips.AudioClips;
 using Lumix.Clips.MidiClips;
 using Lumix.Tracks;
 using Lumix.Tracks.AudioTracks;
+using Lumix.Tracks.GroupTracks;
 using Lumix.Tracks.Master;
 using Lumix.Tracks.MidiTracks;
 using System.Numerics;
@@ -122,6 +123,11 @@ public static class ArrangementView
         {
             NewMidiTrack($"Track {Tracks.Count}");
         }
+
+        var group = new GroupTrack("Group");
+        group.AddTrackToGroup(Tracks[0]);
+        group.AddTrackToGroup(Tracks[1]);
+        Tracks.Insert(0, group);
     }
 
     public static AudioTrack NewAudioTrack(string name, int index = -1)

@@ -13,15 +13,14 @@ using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.Views.Arrangement;
 using Lumix.ImGuiExtensions;
-using Lumix.Views.Preferences.Audio;
-using Lumix.Plugins.BuiltIn;
 
 namespace Lumix.Tracks;
 
 public enum TrackType
 {
     Audio,
-    Midi
+    Midi,
+    Group
 }
 
 public abstract class Track

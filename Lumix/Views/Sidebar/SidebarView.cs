@@ -8,10 +8,8 @@ using Lumix.Clips.MidiClips;
 using Lumix.Views.Sidebar.Preview;
 using Lumix.Clips.Renderers;
 using Lumix.ImGuiExtensions;
-using Lumix.Views.Preferences.Plugins;
 using Lumix.Views.Preferences.AudioFolders;
 using Lumix.FileDialogs;
-using NAudio.Wave;
 
 namespace Lumix.Views.Sidebar;
 
