@@ -65,6 +65,9 @@ public abstract class Track
     public float DragStartOffsetX { get; private set; } // Store the offset when dragging starts (for clips)
     public bool TrackHasCursor { get; private set; }
 
+    public (MusicalTime start, MusicalTime end) TrackSelectionArea;
+    public bool IsAreaSelectionMode { get; private set; }
+
     private Clip? _tmpClip;
 
     private Clip? _draggedClip = null; // Track the currently dragged clip
@@ -86,6 +89,35 @@ public abstract class Track
     {
         TrackTopPos = ImGui.GetCursorPosY();
         TrackHasCursor = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
+
+        // Reset selection area
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            TrackSelectionArea.start = new MusicalTime(1, 1, 1);
+            TrackSelectionArea.end = new MusicalTime(1, 1, 1);
+        }
+
+        // Selection area dragging
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered))
+        {
+            TrackSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            TrackSelectionArea.end = TrackSelectionArea.start;
+            IsAreaSelectionMode = true;
+        }
+        else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && IsAreaSelectionMode)
+        {
+            TrackSelectionArea.end = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+        }
+        else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+        {
+            IsAreaSelectionMode = false;
+        }
+
+        // Draw selection area
+        float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
+        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TrackSelectionArea.start, true)), ImGui.GetWindowPos().Y);
+        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TrackSelectionArea.end, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
+        ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(new Vector4(0.55f, 0.79f, 0.85f, 0.4f)));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
         var vstPlugin = Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
