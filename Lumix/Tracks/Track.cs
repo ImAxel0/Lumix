@@ -66,8 +66,11 @@ public abstract class Track
     public float DragStartOffsetX { get; private set; } // Store the offset when dragging starts (for clips)
     public bool TrackHasCursor { get; private set; }
 
+    /// <summary>
+    /// Selected time of the track in musical time
+    /// </summary>
     public (MusicalTime start, MusicalTime end) TimeSelectionArea;
-    private long _lastTickSelect;
+    private long _lastTickSelection;
 
     public bool IsAreaSelectionMode { get; private set; }
 
@@ -101,18 +104,19 @@ public abstract class Track
         }
 
         // Selection area dragging
-        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered))
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered)
+            && !ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
         {
             TimeSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
             TimeSelectionArea.end = TimeSelectionArea.start;
-            _lastTickSelect = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
+            _lastTickSelection = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
             IsAreaSelectionMode = true;
         }
         else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && TrackHasCursor && IsAreaSelectionMode)
         {
             // Update selection area
             var time = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
-            var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelect, true);
+            var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelection, true);
             if (time == timelineTickStart)
             {
                 TimeSelectionArea.start = timelineTickStart;
@@ -383,27 +387,43 @@ public abstract class Track
         var duplicated = Clips.FirstOrDefault(clip => clip.DuplicateRequested);
         if (duplicated != null)
         {
+            // If an area is selected, create clip at end of the area, else at the end of the clip
+            // TODO: if multiple clips are selected all but first have wrong start time
+            bool hasTimeSelection = TimeSelectionArea.start != TimeSelectionArea.end;
+            long newClipTime = hasTimeSelection ?
+                TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.end, true)
+                : duplicated.StartTick + duplicated.DurationTicks;
+
+            // If an area is selected, shift it by its length
+            if (hasTimeSelection)
+            {
+                MusicalTime timeSelectionLength = TimeSelectionArea.end - TimeSelectionArea.start;
+                TimeSelectionArea.end += timeSelectionLength;
+                TimeSelectionArea.start += timeSelectionLength;
+            }
+
             if (duplicated is AudioClip audioClip)
             {
-                var copy = new AudioClip(this as AudioTrack, new AudioClipData(audioClip.Clip.AudioFileReader.FileName),
-                    audioClip.StartTick + audioClip.DurationTicks);
+                var copy = new AudioClip(this as AudioTrack, new AudioClipData(audioClip.Clip.AudioFileReader.FileName), newClipTime);
                 Clips.Add(copy);
                 ArrangementView.SelectedClips.Clear();
                 ArrangementView.SelectedClips.Add(copy);
-                SetDraggedClip(copy);
+                if (!hasTimeSelection)
+                    SetDraggedClip(copy);
                 duplicated.DuplicateRequested = false;
             }
             else if (duplicated is MidiClip midiClip)
             {
                 // TODO: DUPLICATED DOESN'T PLAY
                 ArrangementView.SelectedClips.Clear();
-                var copy_clip = new MidiClip(this as MidiTrack, midiClip.MidiClipData, midiClip.StartTick + midiClip.DurationTicks)
+                var copy_clip = new MidiClip(this as MidiTrack, midiClip.MidiClipData, newClipTime)
                 {
                     Enabled = midiClip.Enabled,
                     Color = midiClip.Color
                 };
                 this.Clips.Add(copy_clip);
-                SetDraggedClip(copy_clip);
+                if (!hasTimeSelection)
+                    SetDraggedClip(copy_clip);
                 duplicated.DuplicateRequested = false;
             }
         }
