@@ -67,6 +67,8 @@ public abstract class Track
     public bool TrackHasCursor { get; private set; }
 
     public (MusicalTime start, MusicalTime end) TimeSelectionArea;
+    private long _lastTickSelect;
+
     public bool IsAreaSelectionMode { get; private set; }
 
     private Clip? _tmpClip;
@@ -103,24 +105,25 @@ public abstract class Track
         {
             TimeSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
             TimeSelectionArea.end = TimeSelectionArea.start;
+            _lastTickSelect = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
             IsAreaSelectionMode = true;
         }
         else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && TrackHasCursor && IsAreaSelectionMode)
         {
             // Update selection area
             var time = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
-            var timelineTime = TimeLineV2.TicksToMusicalTime(TimeLineV2.GetCurrentTick(), true);
-            if (time == timelineTime)
+            var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelect, true);
+            if (time == timelineTickStart)
             {
-                TimeSelectionArea.start = timelineTime;
-                TimeSelectionArea.end = timelineTime;
+                TimeSelectionArea.start = timelineTickStart;
+                TimeSelectionArea.end = timelineTickStart;
             }
-            else if (time < timelineTime)
+            else if (time < timelineTickStart)
             {
-                TimeSelectionArea.end = timelineTime;
+                TimeSelectionArea.end = timelineTickStart;
                 TimeSelectionArea.start = time;
             }
-            else if (time > timelineTime)
+            else if (time > timelineTickStart)
             {
                 TimeSelectionArea.end = time;
             }

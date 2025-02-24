@@ -69,6 +69,11 @@ public static class TimeLineV2
         return _currentTick;
     }
 
+    public static long GetLastTickStart()
+    { 
+        return _lastTickStart; 
+    }
+
     public static void SetCurrentTick(long ticks)
     {
         _currentTick = ticks;
