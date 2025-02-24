@@ -529,7 +529,7 @@ public static class ArrangementView
             TimeLineV2.UpdatePlayback();
             //float xOffset = windowPos.X + TimeLine.CurrentTime * Zoom - _arrangementScrollX;
             float xOffset = windowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - _arrangementScrollX;
-            if (TimeLineV2.GetCurrentTick() > 0 && xOffset > windowPos.X && xOffset < windowPos.X + _arrangementWidth)
+            if (TimeLineV2.GetCurrentTick() > 0 && xOffset > windowPos.X && xOffset < windowPos.X + _arrangementWidth && TimeLineV2.IsPlaying())
                 ImGui.GetForegroundDrawList().AddLine(new(xOffset, windowPos.Y + menuBarHeight + 32), new(xOffset, windowPos.Y + windowSize.Y),
                     ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)));
 

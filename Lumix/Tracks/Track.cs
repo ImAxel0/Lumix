@@ -13,6 +13,7 @@ using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.Views.Arrangement;
 using Lumix.ImGuiExtensions;
+using static Vanara.PInvoke.User32;
 
 namespace Lumix.Tracks;
 
@@ -65,7 +66,7 @@ public abstract class Track
     public float DragStartOffsetX { get; private set; } // Store the offset when dragging starts (for clips)
     public bool TrackHasCursor { get; private set; }
 
-    public (MusicalTime start, MusicalTime end) TrackSelectionArea;
+    public (MusicalTime start, MusicalTime end) TimeSelectionArea;
     public bool IsAreaSelectionMode { get; private set; }
 
     private Clip? _tmpClip;
@@ -93,28 +94,47 @@ public abstract class Track
         // Reset selection area
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
-            TrackSelectionArea.start = new MusicalTime(1, 1, 1);
-            TrackSelectionArea.end = new MusicalTime(1, 1, 1);
+            TimeSelectionArea.start = new MusicalTime(1, 1, 1);
+            TimeSelectionArea.end = new MusicalTime(1, 1, 1);
         }
 
         // Selection area dragging
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered))
         {
-            TrackSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
-            TrackSelectionArea.end = TrackSelectionArea.start;
+            TimeSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            TimeSelectionArea.end = TimeSelectionArea.start;
             IsAreaSelectionMode = true;
         }
-        else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && IsAreaSelectionMode)
+        else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && TrackHasCursor && IsAreaSelectionMode)
         {
-            TrackSelectionArea.end = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            // Update selection area
+            var time = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            var timelineTime = TimeLineV2.TicksToMusicalTime(TimeLineV2.GetCurrentTick(), true);
+            if (time == timelineTime)
+            {
+                TimeSelectionArea.start = timelineTime;
+                TimeSelectionArea.end = timelineTime;
+            }
+            else if (time < timelineTime)
+            {
+                TimeSelectionArea.end = timelineTime;
+                TimeSelectionArea.start = time;
+            }
+            else if (time > timelineTime)
+            {
+                TimeSelectionArea.end = time;
+            }
+            MusicalTime selectionLength = TimeSelectionArea.end - TimeSelectionArea.start;
+            UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.start.Bars}.{TimeSelectionArea.start.Beats}.{TimeSelectionArea.start.Ticks}\n" +
+                $"End: {TimeSelectionArea.end.Bars}.{TimeSelectionArea.end.Beats}.{TimeSelectionArea.end.Ticks}\n" +
+                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLineV2.TicksToSeconds(TimeLineV2.MusicalTimeToTicks(selectionLength)):n1}s)");
         }
         else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
         {
             // Select all clips in drawed area
             foreach (var clip in Clips)
             {
-                if ((clip.StartMusicalTime >= TrackSelectionArea.start && clip.EndMusicalTime <= TrackSelectionArea.end)
-                    || clip.StartMusicalTime >= TrackSelectionArea.end && clip.EndMusicalTime <= TrackSelectionArea.start)
+                if (clip.StartMusicalTime >= TimeSelectionArea.start && clip.EndMusicalTime <= TimeSelectionArea.end)
                 {
                     ArrangementView.SelectedClips.Add(clip);
                 }
@@ -124,8 +144,8 @@ public abstract class Track
 
         // Draw selection area
         float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
-        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TrackSelectionArea.start, true)), ImGui.GetWindowPos().Y);
-        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TrackSelectionArea.end, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
+        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.start, true)), ImGui.GetWindowPos().Y);
+        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.end, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
         ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(new Vector4(0.55f, 0.79f, 0.85f, 0.4f)));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
@@ -385,6 +405,14 @@ public abstract class Track
             }
         }
 
+        // Draw timeline line
+        if (this == DevicesView.SelectedTrack && !TimeLineV2.IsPlaying())
+        {
+            float xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
+            ImGui.GetWindowDrawList().AddLine(new Vector2(xOffset, ImGui.GetWindowPos().Y),
+                new Vector2(xOffset, ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y),
+                ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)), 1.5f);
+        }
     }
 
     private void RenderGridLines(float viewportWidth, float trackHeight)
