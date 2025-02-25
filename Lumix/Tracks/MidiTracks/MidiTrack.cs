@@ -29,9 +29,15 @@ public class MidiTrack : Track
     private MidiClipData _draggedClip = null; // Track the currently dragged clip
     public MidiClipData DraggedClip => _draggedClip;
 
-    private void CreateMidiClip(long time)
+    public void CreateMidiClip(long time)
     {
         var clip = new MidiClip(this, time);
+        Clips.Add(clip);
+    }
+
+    public void CreateMidiClip((MusicalTime start, MusicalTime end) time)
+    {
+        var clip = new MidiClip(this, (time.start, time.end));
         Clips.Add(clip);
     }
 

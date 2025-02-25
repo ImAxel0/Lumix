@@ -182,6 +182,15 @@ public abstract class Track
             OnDoubleClickLeft();
         }
 
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.M, false)
+            && (TimeSelectionArea.start != TimeSelectionArea.end))
+        {
+            if (this is MidiTrack midiTrack)
+            {
+                midiTrack.CreateMidiClip(TimeSelectionArea);
+            }
+        }
+
         if (ImGui.BeginDragDropTarget())
         {
             ImGui.AcceptDragDropPayload("CLIP");
