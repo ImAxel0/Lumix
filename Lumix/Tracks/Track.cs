@@ -436,7 +436,7 @@ public abstract class Track
                 duplicated.DuplicateRequested = false;
             }
         }
-
+        
         // Draw timeline line
         if (this == DevicesView.SelectedTrack)
         {

@@ -27,7 +27,7 @@ public class PianoRoll
     public List<Note> _notes = new();
     private Note? _currentNote = null;
     private List<Note> _selectedNotes = new();
-    private List<bool> _noteHovered = new(); // list of notes hovered state
+    private List<bool> _notesHovered = new(); // list of notes hovered state
     private int _lastSentNoteNum;
 
     private float _beatsPerBar = 1;
@@ -204,10 +204,10 @@ public class PianoRoll
         _noteHeight = ImGui.GetWindowSize().Y / TotalKeys; // spread keys across all window height
 
         _hoveringPiano = ImGui.IsMouseHoveringRect(_windowPos, _windowPos + new Vector2(KeyWidth, _windowSize.Y));
-
-        RenderKeys();
+        
         RenderGrid();
         RenderNotes();
+        RenderKeys();
         RenderTimeLine();
         HandleMouseInteraction();
 
@@ -307,53 +307,7 @@ public class PianoRoll
     private void RenderGrid()
     {
         var drawList = ImGui.GetWindowDrawList();
-        float startX = _windowPos.X + KeyWidth - _scrollX;
-        float endX = startX + _windowSize.X + _scrollX;
-
-        uint gridColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.3f));
-        uint gridColor2 = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.2f));
-        float gridThickness = 1.0f;
-
-        /*
-        // Vertical grid + timeline seconds
-        int index = 0;
-        for (float x = startX; x <= endX; x += 120 * _zoom * _beatsPerBar)
-        {
-            //if (seconds == 9)
-            //seconds = -1;
-
-            // prevent rendering lines on piano keys
-            if (x < _windowPos.X + KeyWidth)
-            {
-                index++;
-                continue;
-            }
-
-            if (index % 2 != 0)
-            {
-                index++;
-                continue;
-            }
-            ImGui.GetWindowDrawList().AddLine(new Vector2(x, _windowPos.Y), new Vector2(x, _windowPos.Y + _windowSize.Y), gridColor, gridThickness);
-            index += 1;
-        }
-
-        Vector4 color = ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled];
-        int seconds = 0;
-        for (float x = startX; x <= endX; x += TopBarControls.Bpm * _zoom)
-        {
-            if (seconds % 2 != 0 || seconds == 0)
-            {
-                seconds++;
-                continue;
-            }
-            var textSize = ImGui.CalcTextSize(seconds.ToString()).X;
-            ImGui.GetWindowDrawList().AddText(new Vector2(x - textSize / 3, _windowPos.Y), ImGui.GetColorU32(color), $"{seconds}");
-            seconds += 1;
-        }
-        */
-
-        //float maxScrollX = TimeToPosition(TimeLineV2.MusicalTimeToTicks(_midiClip.EndMusicalTime));
+        uint gridColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.2f));
 
         long startTick = PositionToTime(_scrollX);
         long endTick = PositionToTime(_scrollX + _windowSize.X - KeyWidth);
@@ -362,9 +316,9 @@ public class PianoRoll
         long barSpacing = (long)(beatSpacing * _beatsPerBar);
 
         float pixelsPerTick = _pixelsPerTick;
-
         long gridSpacing = barSpacing;
 
+        // Vertical grid
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
         {
             float xPosition = TimeToPosition(tick) - _scrollX;
@@ -380,9 +334,10 @@ public class PianoRoll
         {
             Vector2 lineStart = _windowPos + new Vector2(KeyWidth, row * _noteHeight * (_vZoom * 10) - _scrollY);
             Vector2 lineEnd = _windowPos + new Vector2(KeyWidth + _windowSize.X - KeyWidth, row * _noteHeight * (_vZoom * 10) - _scrollY);
-            drawList.AddLine(lineStart, lineEnd, gridColor2);
+            drawList.AddLine(lineStart, lineEnd, gridColor);
         }
 
+        // Make Bars:Beats:Ticks text not clash itself
         float minTextSpacing = 60f;
         if (pixelsPerTick * gridSpacing < minTextSpacing)
         {
@@ -441,9 +396,9 @@ public class PianoRoll
     void DrawGridLine(float xPosition, Vector4 color, float thickness = 1f)
     {
         ImGui.GetWindowDrawList().AddLine(
-            new Vector2(xPosition, _windowPos.Y),         // Start point
-            new Vector2(xPosition, _windowPos.Y + _windowSize.Y),       // End point
-            ImGui.ColorConvertFloat4ToU32(color), // Convert color
+            new Vector2(xPosition, _windowPos.Y),
+            new Vector2(xPosition, _windowPos.Y + _windowSize.Y),
+            ImGui.ColorConvertFloat4ToU32(color),
             thickness
         );
     }
@@ -483,7 +438,7 @@ public class PianoRoll
                     noteName);
 
             bool noteHovered = ImGui.IsMouseHoveringRect(rectStart, rectEnd);
-            _noteHovered.Add(noteHovered);
+            _notesHovered.Add(noteHovered);
             if (noteHovered)
             {
                 if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
@@ -492,7 +447,7 @@ public class PianoRoll
                 }
                 else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
-                    if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+                    if (ImGui.IsKeyDown(ImGuiKey.ModShift))
                     {
                         _selectedNotes.Add(note);
                     }
@@ -643,13 +598,22 @@ public class PianoRoll
                 _scrollY = Math.Clamp(_scrollY, 0f, TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y);
             }
 
+            // If no note is hovered
+            if (!_notesHovered.Any(n => n == true))
+            {
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    _selectedNotes.Clear(); // Deselect all notes
+                }
+            }
+
             // We get the note row number dividing mouse local pos to the height of each note
             int row = (int)(localPos.Y / (_vZoom * 10) / _noteHeight);            
             float adjustedMousePosX = (int)localPos.X - KeyWidth;
             long tick = SnapToGrid(PositionToTime(adjustedMousePosX));
             float seconds = (float)TimeLineV2.TicksToSeconds(tick, false);
             long realTicks = TimeConverter.ConvertFrom(new MetricTimeSpan(TimeSpan.FromSeconds(seconds)), _midiClip.MidiClipData.TempoMap);
-            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && !_noteHovered.Any(n => n == true))
+            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && !_notesHovered.Any(n => n == true))
             {
                 if (_keysSound)
                 {
@@ -658,7 +622,7 @@ public class PianoRoll
                     //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
                     _lastSentNoteNum = RowToNoteNumber(row);
                 }
-                
+
                 // We start placing the note
                 NoteName noteName = RowToNoteName(row);
                 int octave = RowToOctave(row);
@@ -691,39 +655,77 @@ public class PianoRoll
 
                 _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
 
-                // We select and release the drew note
+                // We select and release the drawed note
                 _selectedNotes.Clear();
                 _selectedNotes.Add(_currentNote);
                 _currentNote = null;
-
-                // We release the moving offset
-                _clickY = null;
             }
 
-            /* Notes moving
-            if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && _currentNote == null)
+            // Notes moving
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _currentNote == null)
             {
-                _clickY ??= localPos.Y;
-                if (_clickY - _noteHeight > localPos.Y)
+                _lastSelectedRow ??= row;
+                _lastSnapTick ??= SnapToGrid(tick);
+                if (row < _lastSelectedRow)
                 {
                     _selectedNotes.ForEach(n => n.NoteNumber = (SevenBitNumber)Math.Clamp(n.NoteNumber + new SevenBitNumber(1), 21, 108));
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                    _clickY = null;
+                    _lastSelectedRow = row;
+
+                    if (_keysSound)
+                    {
+                        var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
+                        vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
+
+                        vstPlugin?.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        _lastSentNoteNum = RowToNoteNumber(row);
+                    }
                 }
-                else if (_clickY + _noteHeight < localPos.Y) 
+                else if (row > _lastSelectedRow)
                 {
                     _selectedNotes.ForEach(n => n.NoteNumber = (SevenBitNumber)Math.Clamp(n.NoteNumber - new SevenBitNumber(1), 21, 108));
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                    _clickY = null;
+                    _lastSelectedRow = row;
+
+                    if (_keysSound)
+                    {
+                        var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
+                        vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
+
+                        vstPlugin?.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        _lastSentNoteNum = RowToNoteNumber(row);
+                    }
                 }
 
-                _selectedNotes.ForEach(n => n.Length = Math.Clamp(realTicks - n.Time, GetTicksInBar(), long.MaxValue)); 
+                if (SnapToGrid(tick) < _lastSnapTick)
+                {
+                    _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time - GetTicksInBar(), 0, long.MaxValue));
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    _lastSnapTick = SnapToGrid(tick);
+                }
+                else if (SnapToGrid(tick) > _lastSnapTick)
+                {
+                    _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time + GetTicksInBar(), 0, long.MaxValue));
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    _lastSnapTick = SnapToGrid(tick);
+                }
+
+                //_selectedNotes.ForEach(n => n.Length = Math.Clamp(realTicks - n.Time, GetTicksInBar(), long.MaxValue)); 
             }
-            */
-            _noteHovered.Clear();
+            else
+            {
+                _lastSelectedRow = null;
+                _lastSnapTick = null;
+            }
+
+            _notesHovered.Clear();
         }
     }
-    private float? _clickY = null;
+    private int? _lastSelectedRow = null;
+    private long? _lastSnapTick = null;
+
     private bool IsBlackKey(int row)
     {
         int noteInOctave = row % 12;
