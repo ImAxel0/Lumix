@@ -16,7 +16,6 @@ public class TrackMidiEngine : TrackEngine, IDisposable
 {
     private Playback _playback;
     public Playback Playback => _playback;
-    private bool isPlaying;
 
     private bool sustainPedalActive = false;
 
@@ -63,8 +62,6 @@ public class TrackMidiEngine : TrackEngine, IDisposable
 
     public override void Fire(MidiFile midiFile, float offset, float endOffset)
     {
-        if (isPlaying) return; // Prevent multiple playbacks
-
         _playback?.Dispose();
 
         _playback = midiFile.GetPlayback();
@@ -100,7 +97,6 @@ public class TrackMidiEngine : TrackEngine, IDisposable
         };
 
         _playback.Start();
-        isPlaying = true;
     }
 
     public override void Fire(AudioFileReader audioFile, float offset, float endOffset)
@@ -112,7 +108,6 @@ public class TrackMidiEngine : TrackEngine, IDisposable
     {
         _playback?.Stop();
         _playback?.MoveToStart();
-        isPlaying = false;
     }
 
     public override void StartRecording()

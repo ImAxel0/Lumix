@@ -424,7 +424,6 @@ public abstract class Track
             }
             else if (duplicated is MidiClip midiClip)
             {
-                // TODO: DUPLICATED DOESN'T PLAY
                 ArrangementView.SelectedClips.Clear();
                 var copy_clip = new MidiClip(this as MidiTrack, midiClip.MidiClipData, newClipTime)
                 {
