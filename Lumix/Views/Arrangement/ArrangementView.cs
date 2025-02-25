@@ -292,31 +292,14 @@ public static class ArrangementView
                 if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.NoPopupHierarchy))
                 {
                     // change timeline position
-                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !TimeLineV2.IsPlaying() && !ImGui.IsKeyDown(ImGuiKey.ReservedForModCtrl))
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsKeyDown(ImGuiKey.ReservedForModCtrl))
                     {
                         long newTime = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + _arrangementScrollX - windowPos.X));
-                        TimeLineV2.SetCurrentTick(newTime);    
-                        /*
-                        float mousePosX = ImGui.GetMousePos().X - windowPos.X;
-                        float adjustedMousePosX = mousePosX + _arrangementScrollX;
-                        float newTime = adjustedMousePosX / Zoom;
-                        float snappedPosition = AdaptiveGrid.GetSnappedPosition(newTime);
-                        TimeLine.SetTime(snappedPosition);
-                        */
-                        /*
-                        // Get the mouse position within the window
-                        float mousePosX = ImGui.GetMousePos().X - windowPos.X;
 
-                        // Adjust the mouse position based on the scroll offset
-                        float adjustedMousePosX = mousePosX + _arrangementScrollX;                      
-
-                        // Convert the mouse position in pixels to time, considering the zoom factor
-                        float newTime = adjustedMousePosX / Zoom;                        
-                        float stepLength = 120 * ArrangementView.BeatsPerBar * 2;                     
-                        float snappedPosition = MathF.Round(newTime / stepLength) * stepLength;
-                        // Set the timeline's time to the new value
-                        TimeLine.SetTime(snappedPosition);
-                        */
+                        if (!TimeLineV2.IsPlaying())
+                            TimeLineV2.SetCurrentTick(newTime);
+                        else
+                            TimeLineV2.SetLastTickSart(newTime);
                     }
 
                     float scrollDelta = ImGui.GetIO().MouseWheel;

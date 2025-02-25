@@ -30,10 +30,10 @@ public class PianoRoll
     private List<bool> _noteHovered = new(); // list of notes hovered state
     private int _lastSentNoteNum;
 
-    private float _beatsPerBar = 4;
+    private float _beatsPerBar = 1;
     private bool _showKeyNotes;
     private bool _keysSound;
-    private float _zoom = 0.1f;
+    private float _zoom = 2f;
     private float _vZoom = 0.3f;
     private float _scrollX = 0f;
     private float _scrollY = 0f;

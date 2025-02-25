@@ -429,9 +429,17 @@ public abstract class Track
         }
 
         // Draw timeline line
-        if (this == DevicesView.SelectedTrack && !TimeLineV2.IsPlaying())
+        if (this == DevicesView.SelectedTrack)
         {
-            float xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
+            float xOffset; 
+            if (!TimeLineV2.IsPlaying())
+            {
+                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
+            }
+            else
+            {
+                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetLastTickStart()) - ArrangementView.ArrangementScroolX;
+            }
             ImGui.GetWindowDrawList().AddLine(new Vector2(xOffset, ImGui.GetWindowPos().Y),
                 new Vector2(xOffset, ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y),
                 ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)), 1.5f);

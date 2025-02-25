@@ -192,7 +192,7 @@ public abstract class Clip
         EndMusicalTime = GetEndTimeInMusicalTime();
         DurationMusicalTime = GetDurationInMusicalTime();
     }
-
+    /*
     public void Render2()
     {
         UpdateTimesData();
@@ -268,7 +268,7 @@ public abstract class Clip
             Track.SetDraggedClip(null);
         }
     }
-
+    */
     public void Render()
     {
         UpdateTimesData();

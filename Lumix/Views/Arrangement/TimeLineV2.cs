@@ -79,6 +79,11 @@ public static class TimeLineV2
         _currentTick = ticks;
     }
 
+    public static void SetLastTickSart(long ticks)
+    {
+        _lastTickStart = ticks;
+    }
+
     public static double TicksToSeconds(long ticks, bool useTempo = true)
     {
         if (!useTempo)
