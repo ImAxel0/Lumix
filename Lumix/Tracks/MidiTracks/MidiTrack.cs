@@ -35,9 +35,9 @@ public class MidiTrack : Track
         Clips.Add(clip);
     }
 
-    public void CreateMidiClip((MusicalTime start, MusicalTime end) time)
+    public void CreateMidiClip(TimeSelection time)
     {
-        var clip = new MidiClip(this, (time.start, time.end));
+        var clip = new MidiClip(this, time);
         Clips.Add(clip);
     }
 

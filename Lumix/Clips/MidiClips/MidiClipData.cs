@@ -24,17 +24,17 @@ public class MidiClipData
         trackChunk.Events.Add(new SequenceTrackNameEvent() { DeltaTime = 0 });
         trackChunk.Events.Add(new SequenceTrackNameEvent()
         {
-            DeltaTime = TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 4), TempoMap.Default)
+            DeltaTime = TimeConverter.ConvertFrom(new BarBeatTicksTimeSpan(2, 0, 0), TempoMap.Default)
         });
         MidiFile = new MidiFile(trackChunk);
         Notes = MidiFile.GetNotes();
         TempoMap = MidiFile.GetTempoMap();
     }
 
-    public MidiClipData((MusicalTime start, MusicalTime end) time)
+    public MidiClipData(TimeSelection time)
     {
         var trackChunk = new TrackChunk();
-        var length = time.end - time.start;
+        var length = time.Length;
         trackChunk.Events.Add(new SequenceTrackNameEvent() { DeltaTime = 0 });
         trackChunk.Events.Add(new SequenceTrackNameEvent()
         {

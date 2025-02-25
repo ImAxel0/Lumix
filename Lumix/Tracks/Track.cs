@@ -69,7 +69,7 @@ public abstract class Track
     /// <summary>
     /// Selected time of the track in musical time
     /// </summary>
-    public (MusicalTime start, MusicalTime end) TimeSelectionArea;
+    public TimeSelection TimeSelectionArea { get; protected set; } = new();
     private long _lastTickSelection;
 
     public bool IsAreaSelectionMode { get; private set; }
@@ -99,16 +99,15 @@ public abstract class Track
         // Reset selection area
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
-            TimeSelectionArea.start = new MusicalTime(1, 1, 1);
-            TimeSelectionArea.end = new MusicalTime(1, 1, 1);
+            TimeSelectionArea.Reset();
         }
 
         // Selection area dragging
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered)
             && !ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
         {
-            TimeSelectionArea.start = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
-            TimeSelectionArea.end = TimeSelectionArea.start;
+            TimeSelectionArea.SetStart(TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true));
+            TimeSelectionArea.SetEnd(TimeSelectionArea.Start);
             _lastTickSelection = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
             IsAreaSelectionMode = true;
         }
@@ -119,21 +118,21 @@ public abstract class Track
             var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelection, true);
             if (time == timelineTickStart)
             {
-                TimeSelectionArea.start = timelineTickStart;
-                TimeSelectionArea.end = timelineTickStart;
+                TimeSelectionArea.SetStart(timelineTickStart);
+                TimeSelectionArea.SetEnd(timelineTickStart);
             }
             else if (time < timelineTickStart)
             {
-                TimeSelectionArea.end = timelineTickStart;
-                TimeSelectionArea.start = time;
+                TimeSelectionArea.SetEnd(timelineTickStart);
+                TimeSelectionArea.SetStart(time);
             }
             else if (time > timelineTickStart)
             {
-                TimeSelectionArea.end = time;
+                TimeSelectionArea.SetEnd(time);
             }
-            MusicalTime selectionLength = TimeSelectionArea.end - TimeSelectionArea.start;
-            UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.start.Bars}.{TimeSelectionArea.start.Beats}.{TimeSelectionArea.start.Ticks}\n" +
-                $"End: {TimeSelectionArea.end.Bars}.{TimeSelectionArea.end.Beats}.{TimeSelectionArea.end.Ticks}\n" +
+            MusicalTime selectionLength = TimeSelectionArea.Length;
+            UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.Start.Bars}.{TimeSelectionArea.Start.Beats}.{TimeSelectionArea.Start.Ticks}\n" +
+                $"End: {TimeSelectionArea.End.Bars}.{TimeSelectionArea.End.Beats}.{TimeSelectionArea.End.Ticks}\n" +
                 $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLineV2.TicksToSeconds(TimeLineV2.MusicalTimeToTicks(selectionLength)):n1}s)");
         }
         else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
@@ -141,7 +140,7 @@ public abstract class Track
             // Select all clips in drawed area
             foreach (var clip in Clips)
             {
-                if (clip.StartMusicalTime >= TimeSelectionArea.start && clip.EndMusicalTime <= TimeSelectionArea.end)
+                if (clip.StartMusicalTime >= TimeSelectionArea.Start && clip.EndMusicalTime <= TimeSelectionArea.End)
                 {
                     ArrangementView.SelectedClips.Add(clip);
                 }
@@ -151,8 +150,8 @@ public abstract class Track
 
         // Draw selection area
         float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
-        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.start, true)), ImGui.GetWindowPos().Y);
-        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.end, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
+        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.Start, true)), ImGui.GetWindowPos().Y);
+        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
         ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(new Vector4(0.55f, 0.79f, 0.85f, 0.4f)));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
@@ -182,12 +181,14 @@ public abstract class Track
             OnDoubleClickLeft();
         }
 
+        // Create midi clip of selected area
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.M, false)
-            && (TimeSelectionArea.start != TimeSelectionArea.end))
+            && TimeSelectionArea.HasArea())
         {
             if (this is MidiTrack midiTrack)
             {
                 midiTrack.CreateMidiClip(TimeSelectionArea);
+                TimeSelectionArea.Reset();
             }
         }
 
@@ -398,17 +399,17 @@ public abstract class Track
         {
             // If an area is selected, create clip at end of the area, else at the end of the clip
             // TODO: if multiple clips are selected all but first have wrong start time
-            bool hasTimeSelection = TimeSelectionArea.start != TimeSelectionArea.end;
+            bool hasTimeSelection = TimeSelectionArea.HasArea();
             long newClipTime = hasTimeSelection ?
-                TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.end, true)
+                TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)
                 : duplicated.StartTick + duplicated.DurationTicks;
 
             // If an area is selected, shift it by its length
             if (hasTimeSelection)
             {
-                MusicalTime timeSelectionLength = TimeSelectionArea.end - TimeSelectionArea.start;
-                TimeSelectionArea.end += timeSelectionLength;
-                TimeSelectionArea.start += timeSelectionLength;
+                MusicalTime timeSelectionLength = TimeSelectionArea.Length;
+                TimeSelectionArea.AddToEnd(timeSelectionLength);
+                TimeSelectionArea.AddToStart(timeSelectionLength);
             }
 
             if (duplicated is AudioClip audioClip)
