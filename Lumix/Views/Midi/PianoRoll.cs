@@ -441,11 +441,63 @@ public class PianoRoll
             _notesHovered.Add(noteHovered);
             if (noteHovered)
             {
+                float rectWidth = rectEnd.X - rectStart.X;
+                float resizeGripSize = rectWidth * 10 / 100;
+                resizeGripSize = Math.Clamp(resizeGripSize, 5f, 15f);
+                bool rightBorderHover = ImGui.IsMouseHoveringRect(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd);
+                bool leftBorderHover = ImGui.IsMouseHoveringRect(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y));
+                drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
+                drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
+                if (rightBorderHover)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                    if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    {
+                        if (_selectedNotes.Contains(note))
+                            _selectedNotes.Remove(note);
+
+                        if (ImGui.GetIO().MouseDelta.X > 0)
+                        {
+                            note.Length = Math.Clamp(note.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                        }
+                        else if (ImGui.GetIO().MouseDelta.X < 0)
+                        {
+                            note.Length = Math.Clamp(note.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                        }
+                    }
+                }
+                else if (leftBorderHover)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                    if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    {
+                        if (_selectedNotes.Contains(note))
+                            _selectedNotes.Remove(note);
+
+                        if (ImGui.GetIO().MouseDelta.X > 0)
+                        {
+                            if (note.Length > GetTicksInBar())
+                            {
+                                note.Time = Math.Clamp(note.Time + GetTicksInBar(), 0, long.MaxValue);
+                                note.Length = Math.Clamp(note.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                            }
+                        }
+                        else if (ImGui.GetIO().MouseDelta.X < 0)
+                        {
+                            note.Time = Math.Clamp(note.Time - GetTicksInBar(), 0, long.MaxValue);
+                            if (note.Time > 0)
+                            {
+                                note.Length = Math.Clamp(note.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                            }
+                        }
+                    }
+                }
+
                 if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                 {
                     deleted.Add(note);
                 }
-                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !rightBorderHover && !leftBorderHover)
                 {
                     if (ImGui.IsKeyDown(ImGuiKey.ModShift))
                     {
@@ -492,6 +544,7 @@ public class PianoRoll
         if (deleted.Count > 0 || requestUpdate)
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
     }
+    private long? _resizeSnapTick = null;
 
     private void RenderTimeLine()
     {
@@ -666,6 +719,8 @@ public class PianoRoll
             {
                 _lastSelectedRow ??= row;
                 _lastSnapTick ??= SnapToGrid(tick);
+
+                // Up and Down movement
                 if (row < _lastSelectedRow)
                 {
                     _selectedNotes.ForEach(n => n.NoteNumber = (SevenBitNumber)Math.Clamp(n.NoteNumber + new SevenBitNumber(1), 21, 108));
@@ -699,20 +754,19 @@ public class PianoRoll
                     }
                 }
 
+                // Right and Left movement
                 if (SnapToGrid(tick) < _lastSnapTick)
                 {
                     _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time - GetTicksInBar(), 0, long.MaxValue));
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    //_midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSnapTick = SnapToGrid(tick);
                 }
                 else if (SnapToGrid(tick) > _lastSnapTick)
                 {
                     _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time + GetTicksInBar(), 0, long.MaxValue));
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    //_midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSnapTick = SnapToGrid(tick);
                 }
-
-                //_selectedNotes.ForEach(n => n.Length = Math.Clamp(realTicks - n.Time, GetTicksInBar(), long.MaxValue)); 
             }
             else
             {
