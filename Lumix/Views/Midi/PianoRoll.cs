@@ -440,64 +440,12 @@ public class PianoRoll
             bool noteHovered = ImGui.IsMouseHoveringRect(rectStart, rectEnd);
             _notesHovered.Add(noteHovered);
             if (noteHovered)
-            {
-                float rectWidth = rectEnd.X - rectStart.X;
-                float resizeGripSize = rectWidth * 10 / 100;
-                resizeGripSize = Math.Clamp(resizeGripSize, 5f, 15f);
-                bool rightBorderHover = ImGui.IsMouseHoveringRect(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd);
-                bool leftBorderHover = ImGui.IsMouseHoveringRect(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y));
-                drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
-                drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
-                if (rightBorderHover)
-                {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-                    if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                    {
-                        if (_selectedNotes.Contains(note))
-                            _selectedNotes.Remove(note);
-
-                        if (ImGui.GetIO().MouseDelta.X > 0)
-                        {
-                            note.Length = Math.Clamp(note.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
-                        }
-                        else if (ImGui.GetIO().MouseDelta.X < 0)
-                        {
-                            note.Length = Math.Clamp(note.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
-                        }
-                    }
-                }
-                else if (leftBorderHover)
-                {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-                    if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                    {
-                        if (_selectedNotes.Contains(note))
-                            _selectedNotes.Remove(note);
-
-                        if (ImGui.GetIO().MouseDelta.X > 0)
-                        {
-                            if (note.Length > GetTicksInBar())
-                            {
-                                note.Time = Math.Clamp(note.Time + GetTicksInBar(), 0, long.MaxValue);
-                                note.Length = Math.Clamp(note.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
-                            }
-                        }
-                        else if (ImGui.GetIO().MouseDelta.X < 0)
-                        {
-                            note.Time = Math.Clamp(note.Time - GetTicksInBar(), 0, long.MaxValue);
-                            if (note.Time > 0)
-                            {
-                                note.Length = Math.Clamp(note.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
-                            }
-                        }
-                    }
-                }
-
+            {           
                 if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                 {
                     deleted.Add(note);
                 }
-                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !rightBorderHover && !leftBorderHover)
+                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) // && !rightBorderHover && !leftBorderHover
                 {
                     if (ImGui.IsKeyDown(ImGuiKey.ModShift))
                     {
@@ -523,8 +471,81 @@ public class PianoRoll
                     //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOff(0, note.NoteNumber, note.Velocity);
                 }
             }
-        }
 
+            // Note resizing
+            float rectWidth = rectEnd.X - rectStart.X;
+            float resizeGripSize = rectWidth * 10 / 100;
+            resizeGripSize = Math.Clamp(resizeGripSize, 5f, 15f);
+            bool rightBorderHover = ImGui.IsMouseHoveringRect(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd);
+            bool leftBorderHover = ImGui.IsMouseHoveringRect(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y));
+            drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
+            drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
+            if ((rightBorderHover || _rightResizing) && !_leftResizing && !_movingNotes)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                {
+                    _rightResizing = true;
+
+                    long tick = GetTicksAtCursor();
+                    _resizeSnapTick ??= SnapToGrid(tick);
+
+                    if (SnapToGrid(tick) > _resizeSnapTick)
+                    {
+                        _selectedNotes.ForEach(n => {
+                            n.Length = Math.Clamp(n.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                        });
+                        _resizeSnapTick = SnapToGrid(tick);
+                    }
+                    else if (SnapToGrid(tick) < _resizeSnapTick)
+                    {
+                        _selectedNotes.ForEach(n => {
+                            n.Length = Math.Clamp(n.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                        });
+                        _resizeSnapTick = SnapToGrid(tick);
+                    }
+                }
+            }
+            else if ((leftBorderHover || _leftResizing) && !_rightResizing && !_movingNotes)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                {
+                    _leftResizing = true;
+
+                    long tick = GetTicksAtCursor();
+                    _resizeSnapTick ??= SnapToGrid(tick);
+
+                    if (SnapToGrid(tick) < _resizeSnapTick)
+                    {
+                        _selectedNotes.ForEach(n => {
+                            if (n.Time > 0)
+                            {
+                                n.Length = Math.Clamp(n.Length + GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                            }
+                            n.Time = Math.Clamp(n.Time - GetTicksInBar(), 0, long.MaxValue);
+                        });
+                        _resizeSnapTick = SnapToGrid(tick);
+                    }
+                    else if (SnapToGrid(tick) > _resizeSnapTick)
+                    {
+                        _selectedNotes.ForEach(n => {
+                            n.Time = Math.Clamp(n.Time + GetTicksInBar(), 0, n.EndTime - GetTicksInBar());
+                            n.Length = Math.Clamp(n.Length - GetTicksInBar(), GetTicksInBar(), long.MaxValue);
+                        });
+                        _resizeSnapTick = SnapToGrid(tick);
+                    }
+                }
+            }
+
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && (_rightResizing || _leftResizing)) 
+            {
+                _resizeSnapTick = null;
+                _rightResizing = false;
+                _leftResizing = false;
+            }
+        }
+        _selectedNotes.ForEach(n => Console.WriteLine(n.NoteName));
         if (ImGui.IsKeyPressed(ImGuiKey.Delete))
         {
             _selectedNotes.ForEach(note =>
@@ -545,6 +566,8 @@ public class PianoRoll
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
     }
     private long? _resizeSnapTick = null;
+    private bool _rightResizing;
+    private bool _leftResizing;
 
     private void RenderTimeLine()
     {
@@ -715,8 +738,10 @@ public class PianoRoll
             }
 
             // Notes moving
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _currentNote == null)
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _currentNote == null && !_rightResizing && !_leftResizing)
             {
+                _movingNotes = true;
+
                 _lastSelectedRow ??= row;
                 _lastSnapTick ??= SnapToGrid(tick);
 
@@ -772,6 +797,7 @@ public class PianoRoll
             {
                 _lastSelectedRow = null;
                 _lastSnapTick = null;
+                _movingNotes = false;
             }
 
             _notesHovered.Clear();
@@ -779,6 +805,20 @@ public class PianoRoll
     }
     private int? _lastSelectedRow = null;
     private long? _lastSnapTick = null;
+    private bool _movingNotes;
+
+    private long GetTicksAtCursor()
+    {
+        Vector2 mousePos = ImGui.GetMousePos();
+        Vector2 localPos = mousePos - _windowPos;
+
+        // Apply scrolling offsets
+        localPos.X += _scrollX;
+        localPos.Y += _scrollY;
+
+        float adjustedMousePosX = (int)localPos.X - KeyWidth;
+        return PositionToTime(adjustedMousePosX);
+    }
 
     private bool IsBlackKey(int row)
     {
