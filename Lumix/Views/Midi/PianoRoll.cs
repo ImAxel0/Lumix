@@ -31,7 +31,6 @@ public class PianoRoll
     private int _lastSentNoteNum;
 
     private float _beatsPerBar = 1;
-    private bool _showKeyNotes;
     private bool _keysSound;
     private float _zoom = 2f;
     private float _vZoom = 0.3f;
@@ -175,10 +174,6 @@ public class PianoRoll
         if (ImGui.BeginMenuBar())
         {
             ImGui.SetCursorScreenPos(ImGui.GetWindowPos());
-            if (UiElement.Toggle($"Notes", _showKeyNotes, new Vector4(0.95f, 0.58f, 0.13f, 1f), new Vector2(KeyWidth, ImGui.GetFrameHeightWithSpacing())))
-            {
-                _showKeyNotes = !_showKeyNotes;
-            }
             if (UiElement.Toggle($"{FontAwesome6.HeadphonesSimple}", _keysSound, new Vector4(0.95f, 0.58f, 0.13f, 1f), new Vector2(40, ImGui.GetFrameHeightWithSpacing())))
             {
                 _keysSound = !_keysSound;
@@ -287,20 +282,28 @@ public class PianoRoll
 
             // Determine the note name (e.g., C, C#, D, etc.)
             string noteName = NoteNumberToName(noteNumber);
-            if (!_showKeyNotes && (noteName[0] != 'C' || noteName[1] == '#'))
-                continue;
 
             // Set the text color
             uint textColor = isBlackKey
                 ? ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, 1.0f)) // White text for black keys
                 : ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 1.0f)); // Black text for white keys
 
+            // Highlight C notes
+            bool isC = noteName[0] == 'C' && int.TryParse(noteName[1].ToString(), out var res);
+
             // Calculate the position for the note name text (centered on the key)
             Vector2 textSize = ImGui.CalcTextSize(noteName);
             Vector2 textPos = keyStart + new Vector2((KeyWidth - textSize.X) * 0.5f, (_noteHeight * (_vZoom * 10) - textSize.Y) * 0.5f);
 
             // Draw the note name
-            drawList.AddText(textPos, textColor, noteName);
+            if (isC)
+            {
+                drawList.AddText(textPos, textColor, noteName);
+            }
+            else if (NoteNumberToRow(noteNumber) == GetRowNumberAtCursor())
+            {
+                drawList.AddText(textPos, textColor, noteName);
+            }
         }
     }
 
@@ -545,7 +548,7 @@ public class PianoRoll
                 _leftResizing = false;
             }
         }
-        _selectedNotes.ForEach(n => Console.WriteLine(n.NoteName));
+
         if (ImGui.IsKeyPressed(ImGuiKey.Delete))
         {
             _selectedNotes.ForEach(note =>
@@ -818,6 +821,18 @@ public class PianoRoll
 
         float adjustedMousePosX = (int)localPos.X - KeyWidth;
         return PositionToTime(adjustedMousePosX);
+    }
+
+    private int GetRowNumberAtCursor()
+    {
+        Vector2 mousePos = ImGui.GetMousePos();
+        Vector2 localPos = mousePos - _windowPos;
+
+        // Apply scrolling offsets
+        localPos.X += _scrollX;
+        localPos.Y += _scrollY;
+
+        return (int)(localPos.Y / (_vZoom * 10) / _noteHeight);
     }
 
     private bool IsBlackKey(int row)
