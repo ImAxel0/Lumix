@@ -426,12 +426,14 @@ public class PianoRoll
             if (rectEnd.X < _windowPos.X + KeyWidth)
                 continue;
 
-            var noteColor = _midiTrack.Color; // new Vector4(0.3f, 0.7f, 0.3f, 1.0f);
-            if (_selectedNotes.Contains(note))
-                noteColor = new Vector4(0.55f, 0.79f, 0.85f, 1f);
+            var noteColor = _midiTrack.Color; // new Vector4(0.3f, 0.7f, 0.3f, 1.0f);          
 
             drawList.AddRectFilled(rectStart + new Vector2(0, 1), rectEnd - new Vector2(0, 1), ImGui.ColorConvertFloat4ToU32(noteColor));
             drawList.AddRect(rectStart, rectEnd, ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, 0.3f))); // border
+
+            // Highlight selected notes with border
+            if (_selectedNotes.Contains(note))
+                drawList.AddRect(rectStart, rectEnd, ImGui.ColorConvertFloat4ToU32(new Vector4(0.55f, 0.79f, 0.85f, 1f)), 0, ImDrawFlags.None, 2); // border
 
             string noteName = $"{note.NoteName.ToString().Replace("Sharp", "#")}{note.Octave}";
             if (_vZoom >= 0.3f && ImGui.CalcTextSize(noteName).X < rectEnd.X - rectStart.X) // draw notes text
@@ -481,8 +483,8 @@ public class PianoRoll
             resizeGripSize = Math.Clamp(resizeGripSize, 5f, 15f);
             bool rightBorderHover = ImGui.IsMouseHoveringRect(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd);
             bool leftBorderHover = ImGui.IsMouseHoveringRect(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y));
-            drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
-            drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
+            //drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
+            //drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
             if ((rightBorderHover || _rightResizing) && !_leftResizing && !_movingNotes)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
