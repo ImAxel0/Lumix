@@ -452,14 +452,17 @@ public class PianoRoll
                 }
                 else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) // && !rightBorderHover && !leftBorderHover
                 {
+                    _movingNotes = true;
+
                     if (ImGui.IsKeyDown(ImGuiKey.ModShift))
                     {
-                        _selectedNotes.Add(note);
+                        if (!_selectedNotes.Contains(note))
+                            _selectedNotes.Add(note);
                     }
                     else
                     {
                         _selectedNotes.Clear();
-                        _selectedNotes.Add(note);                     
+                        _selectedNotes.Add(note);
                     }
 
                     if (_keysSound)
@@ -485,7 +488,7 @@ public class PianoRoll
             bool leftBorderHover = ImGui.IsMouseHoveringRect(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y));
             //drawList.AddRectFilled(new Vector2(rectEnd.X - resizeGripSize, rectStart.Y), rectEnd, ImGui.GetColorU32(Vector4.One));
             //drawList.AddRectFilled(rectStart, new Vector2(rectStart.X + resizeGripSize, rectEnd.Y), ImGui.GetColorU32(Vector4.One));
-            if ((rightBorderHover || _rightResizing) && !_leftResizing && !_movingNotes)
+            if ((rightBorderHover || _rightResizing) && !_leftResizing)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
@@ -511,7 +514,7 @@ public class PianoRoll
                     }
                 }
             }
-            else if ((leftBorderHover || _leftResizing) && !_rightResizing && !_movingNotes)
+            else if ((leftBorderHover || _leftResizing) && !_rightResizing)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
@@ -743,10 +746,8 @@ public class PianoRoll
             }
 
             // Notes moving
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _currentNote == null && !_rightResizing && !_leftResizing)
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _currentNote == null && !_rightResizing && !_leftResizing && _movingNotes)
             {
-                _movingNotes = true;
-
                 _lastSelectedRow ??= row;
                 _lastSnapTick ??= SnapToGrid(tick);
 
@@ -788,13 +789,13 @@ public class PianoRoll
                 if (SnapToGrid(tick) < _lastSnapTick)
                 {
                     _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time - GetTicksInBar(), 0, long.MaxValue));
-                    //_midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSnapTick = SnapToGrid(tick);
                 }
                 else if (SnapToGrid(tick) > _lastSnapTick)
                 {
                     _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time + GetTicksInBar(), 0, long.MaxValue));
-                    //_midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSnapTick = SnapToGrid(tick);
                 }
             }
@@ -802,6 +803,10 @@ public class PianoRoll
             {
                 _lastSelectedRow = null;
                 _lastSnapTick = null;
+            }
+
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && _movingNotes)
+            {
                 _movingNotes = false;
             }
 
