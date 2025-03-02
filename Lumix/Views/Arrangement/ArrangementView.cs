@@ -206,8 +206,11 @@ public static class ArrangementView
     {
         ListenForShortcuts();
 
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg]);
         if (ImGui.BeginChild("arrangement_view", new(ImGui.GetContentRegionAvail().X - 20, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.None, ImGuiWindowFlags.MenuBar))
         {
+            ImGui.PopStyleColor();
+
             Vector2 windowPos = _windowPos = ImGui.GetWindowPos();
             Vector2 windowSize = ImGui.GetWindowSize();
 
@@ -239,7 +242,7 @@ public static class ArrangementView
                 ImGui.EndMenuBar();
             }
             float menuBarHeight = ImGui.GetFrameHeight();
-
+          
             if (ImGui.BeginChild("timeline_bars", new Vector2(ImGui.GetContentRegionAvail().X - 10, 20), ImGuiChildFlags.FrameStyle))
             {
                 long startTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX);
