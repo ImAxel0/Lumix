@@ -65,6 +65,10 @@ public static class MidiClipView
             string end = $"{SelectedMidiClip.EndMusicalTime.Bars}:{SelectedMidiClip.EndMusicalTime.Beats}:{SelectedMidiClip.EndMusicalTime.Ticks}";
             ImGui.InputText("End", ref end, 100, ImGuiInputTextFlags.ReadOnly);
 
+            var length = SelectedMidiClip.EndMusicalTime - SelectedMidiClip.StartMusicalTime;
+            string duration = $"{length.Bars}:{length.Beats}:{length.Ticks}";
+            ImGui.InputText("Length", ref duration, 100, ImGuiInputTextFlags.ReadOnly);
+
             if (UiElement.Toggle($"{FontAwesome6.Repeat} Loop", false, new Vector4(0.95f, 0.58f, 0.13f, 1f), new Vector2(ImGui.GetContentRegionAvail().X, 25)))
             {
             }
