@@ -5,6 +5,7 @@ using Lumix.Clips.AudioClips;
 using Lumix.Clips.MidiClips;
 using Lumix.Tracks;
 using Lumix.Tracks.AudioTracks;
+using Lumix.Tracks.GroupTracks;
 using Lumix.Tracks.Master;
 using Lumix.Tracks.MidiTracks;
 using System.Numerics;
@@ -51,7 +52,7 @@ public static class ArrangementView
             _arrangementScrollX = target;
 
             // Resize waveforms or other elements if necessary
-            Tracks.ForEach(track =>
+            Tracks.ToList().ForEach(track =>
             {
                 if (track.TrackType == TrackType.Audio)
                 {
@@ -96,7 +97,7 @@ public static class ArrangementView
             ImGui.SetScrollX(Math.Clamp(mousePosInContentX * zoomFactor - mousePosInWindowX, 0, float.PositiveInfinity));
 
             // Resize waveforms or other elements if necessary
-            Tracks.ForEach(track =>
+            Tracks.ToList().ForEach(track =>
             {
                 if (track.TrackType == TrackType.Audio)
                 {
@@ -114,27 +115,44 @@ public static class ArrangementView
 
     public static void Init()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 5; i++)
         {
             NewAudioTrack($"Track {Tracks.Count}");
         }
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             NewMidiTrack($"Track {Tracks.Count}");
         }
+
+        /*
+        var group = new GroupTrack("Group");
+        group.AddTrackToGroup(Tracks[0]);
+        group.AddTrackToGroup(Tracks[1]);
+        Tracks.Insert(0, group);
+        */
     }
 
-    public static AudioTrack NewAudioTrack(string name)
+    public static AudioTrack NewAudioTrack(string name, int index = -1)
     {
         AudioTrack track = new(name);
-        Tracks.Add(track);
+        if (index == -1)
+        {
+            Tracks.Add(track);
+            return track;
+        }
+        Tracks.Insert(index, track);
         return track;
     }
 
-    public static MidiTrack NewMidiTrack(string name)
+    public static MidiTrack NewMidiTrack(string name, int index = -1)
     {
         MidiTrack track = new(name);
-        Tracks.Add(track);
+        if (index == -1)
+        {
+            Tracks.Add(track);
+            return track;
+        }
+        Tracks.Insert(index, track);
         return track;
     }
 
@@ -159,7 +177,7 @@ public static class ArrangementView
         {
             SelectedClips.ForEach(c =>
             {
-
+                c.SetStartTick(Math.Clamp(TimeLineV2.SnapToGrid(c.StartTick + (long)(TimeLineV2.PPQ * TimeLineV2.BeatsPerBar)), 0, long.MaxValue));
             });
         }
 
@@ -167,8 +185,20 @@ public static class ArrangementView
         {
             SelectedClips.ForEach(c =>
             {
-
+                c.SetStartTick(Math.Clamp(TimeLineV2.SnapToGrid(c.StartTick - (long)(TimeLineV2.PPQ * TimeLineV2.BeatsPerBar)), 0, long.MaxValue));
             });
+        }
+
+        // Create new audio track after selected track
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.T, false))
+        {
+            DevicesView.SelectedTrack = NewAudioTrack($"Audio Track {Tracks.Count}", Tracks.IndexOf(DevicesView.SelectedTrack) + 1);
+        }
+
+        // Create new midi track after selected track
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.T, false))
+        {
+            DevicesView.SelectedTrack = NewMidiTrack($"Midi Track {Tracks.Count}", Tracks.IndexOf(DevicesView.SelectedTrack) + 1);
         }
     }
 
@@ -176,8 +206,11 @@ public static class ArrangementView
     {
         ListenForShortcuts();
 
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg]);
         if (ImGui.BeginChild("arrangement_view", new(ImGui.GetContentRegionAvail().X - 20, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.None, ImGuiWindowFlags.MenuBar))
         {
+            ImGui.PopStyleColor();
+
             Vector2 windowPos = _windowPos = ImGui.GetWindowPos();
             Vector2 windowSize = ImGui.GetWindowSize();
 
@@ -209,7 +242,7 @@ public static class ArrangementView
                 ImGui.EndMenuBar();
             }
             float menuBarHeight = ImGui.GetFrameHeight();
-
+          
             if (ImGui.BeginChild("timeline_bars", new Vector2(ImGui.GetContentRegionAvail().X - 10, 20), ImGuiChildFlags.FrameStyle))
             {
                 long startTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX);
@@ -219,7 +252,16 @@ public static class ArrangementView
                 long beatSpacing = TimeLineV2.PPQ;
                 long barSpacing = (long)(beatSpacing * TimeLineV2.BeatsPerBar);
 
+                float minTextSpacing = 60f; 
                 long gridSpacing = barSpacing;
+
+                if (pixelsPerTick * gridSpacing < minTextSpacing)
+                {
+                    while (pixelsPerTick * gridSpacing < minTextSpacing)
+                    {
+                        gridSpacing += barSpacing;
+                    }
+                }
 
                 for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
                 {
@@ -253,31 +295,14 @@ public static class ArrangementView
                 if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.NoPopupHierarchy))
                 {
                     // change timeline position
-                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !TimeLineV2.IsPlaying() && !ImGui.IsKeyDown(ImGuiKey.ReservedForModCtrl))
+                    if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsKeyDown(ImGuiKey.ReservedForModCtrl))
                     {
                         long newTime = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + _arrangementScrollX - windowPos.X));
-                        TimeLineV2.SetCurrentTick(newTime);    
-                        /*
-                        float mousePosX = ImGui.GetMousePos().X - windowPos.X;
-                        float adjustedMousePosX = mousePosX + _arrangementScrollX;
-                        float newTime = adjustedMousePosX / Zoom;
-                        float snappedPosition = AdaptiveGrid.GetSnappedPosition(newTime);
-                        TimeLine.SetTime(snappedPosition);
-                        */
-                        /*
-                        // Get the mouse position within the window
-                        float mousePosX = ImGui.GetMousePos().X - windowPos.X;
 
-                        // Adjust the mouse position based on the scroll offset
-                        float adjustedMousePosX = mousePosX + _arrangementScrollX;                      
-
-                        // Convert the mouse position in pixels to time, considering the zoom factor
-                        float newTime = adjustedMousePosX / Zoom;                        
-                        float stepLength = 120 * ArrangementView.BeatsPerBar * 2;                     
-                        float snappedPosition = MathF.Round(newTime / stepLength) * stepLength;
-                        // Set the timeline's time to the new value
-                        TimeLine.SetTime(snappedPosition);
-                        */
+                        if (!TimeLineV2.IsPlaying())
+                            TimeLineV2.SetCurrentTick(newTime);
+                        else
+                            TimeLineV2.SetLastTickSart(newTime);
                     }
 
                     float scrollDelta = ImGui.GetIO().MouseWheel;
@@ -383,7 +408,7 @@ public static class ArrangementView
                 */
                 // Getting longest clip in arrangement to calculate arrangement width
                 List<Clip> clips = new();
-                Tracks.ForEach(t => clips.AddRange(t.Clips));
+                Tracks.ToList().ForEach(t => clips.AddRange(t.Clips));
                 float minLength = ImGui.GetContentRegionAvail().X;
                 _maxClipLength = minLength;
                 if (clips.Count > 0)
@@ -401,7 +426,7 @@ public static class ArrangementView
                 ImGui.EndChild();
                 ImGui.PopStyleColor();
 
-                foreach (var track in Tracks)
+                foreach (var track in Tracks.ToList())
                 {
                     if (!track.Enabled)
                         ImGui.BeginDisabled();
@@ -441,7 +466,7 @@ public static class ArrangementView
                 }
 
                 int trackIndex = 0;
-                foreach (var track in Tracks)
+                foreach (var track in Tracks.ToList())
                 {
                     if (_zoomedThisFrame) // If zoomed on this frame, skip controls rendering cause of visible artifact
                         continue;
@@ -479,30 +504,8 @@ public static class ArrangementView
                             }
                             clip.HasPlayed = true;
                         }
-
-                        /*
-                        if (TimeLine.IsRunning && TimeLine.GetTimeInSeconds() >= clip.Time && !clip.HasPlayed)
-                        {
-                            float timeOffset = TimeLine.GetTimeInSeconds() - clip.Time + clip.StartOffset;
-                            if (clip is AudioClip audioClip && clip.Enabled)
-                            {
-                                clip.Play(audioClip.Clip.AudioFileReader, timeOffset, clip.EndOffset);
-                            }
-                            else if (clip is MidiClip midiClip && clip.Enabled)
-                            {
-                                clip.Play(midiClip.MidiClipData.MidiFile, timeOffset * TopBarControls.Bpm / 120f);
-                            }
-                            clip.HasPlayed = true;
-                        }
-                        */
                     }
                     trackIndex++;
-                }
-
-                var deletedTrack = Tracks.FirstOrDefault(t => t.DeleteNextFrame);
-                if (deletedTrack != null)
-                {
-                    Tracks.Remove(deletedTrack);
                 }
 
                 ImGui.EndChild();
@@ -512,7 +515,7 @@ public static class ArrangementView
             TimeLineV2.UpdatePlayback();
             //float xOffset = windowPos.X + TimeLine.CurrentTime * Zoom - _arrangementScrollX;
             float xOffset = windowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - _arrangementScrollX;
-            if (TimeLineV2.GetCurrentTick() > 0 && xOffset > windowPos.X && xOffset < windowPos.X + _arrangementWidth)
+            if (TimeLineV2.GetCurrentTick() > 0 && xOffset > windowPos.X && xOffset < windowPos.X + _arrangementWidth && TimeLineV2.IsPlaying())
                 ImGui.GetForegroundDrawList().AddLine(new(xOffset, windowPos.Y + menuBarHeight + 32), new(xOffset, windowPos.Y + windowSize.Y),
                     ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)));
 

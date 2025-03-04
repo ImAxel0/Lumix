@@ -8,7 +8,6 @@ using Lumix.Clips.MidiClips;
 using Lumix.Views.Sidebar.Preview;
 using Lumix.Clips.Renderers;
 using Lumix.ImGuiExtensions;
-using Lumix.Views.Preferences.Plugins;
 using Lumix.Views.Preferences.AudioFolders;
 using Lumix.FileDialogs;
 
@@ -48,7 +47,7 @@ public class SidebarView
             return;
         }
         ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.18f, 0.18f, 0.18f, 1f));
-        if (ImGui.BeginChild("sidebar", new(ImGui.GetContentRegionAvail().X * 25 / 100, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border,
+        if (ImGui.BeginChild("sidebar", new(ImGui.GetContentRegionAvail().X * 25 / 100, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border | ImGuiChildFlags.ResizeX,
              ImGuiWindowFlags.NoSavedSettings))
         {
             Vector2 windowPos = ImGui.GetWindowPos();
@@ -57,6 +56,14 @@ public class SidebarView
             Vector3 border = new Vector3(0.13f, 0.14f, 0.17f) * 0.7f;
             ImGui.GetForegroundDrawList().AddRect(windowPos, windowPos + windowSize,
                 ImGui.GetColorU32(new Vector4(border.X, border.Y, border.Z, 1.00f)), 4f, ImDrawFlags.None, 4f);
+
+            const float minSidebarWidth = 600f;
+            if (windowSize.X < minSidebarWidth)
+                ImGui.SetWindowSize(new Vector2(minSidebarWidth, windowSize.Y));
+
+            float maxSidebarWidth = ImGui.GetIO().DisplaySize.X * 60 / 100;
+            if (windowSize.X > maxSidebarWidth)
+                ImGui.SetWindowSize(new Vector2(maxSidebarWidth, windowSize.Y));
 
             if (ImGui.BeginChild("sidebar_columns", new(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y - 70))) // 70 was: / 1.07f
             {

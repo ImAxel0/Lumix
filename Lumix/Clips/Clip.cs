@@ -89,7 +89,7 @@ public abstract class Clip
     /// <summary>
     /// Clip color
     /// </summary>
-    public Vector4 Color { get => _color; protected set { _color = value; } }
+    public Vector4 Color { get => _color; set { _color = value; } }
 
     /// <summary>
     /// Cutted portion in ticks from start of the clip
@@ -192,7 +192,7 @@ public abstract class Clip
         EndMusicalTime = GetEndTimeInMusicalTime();
         DurationMusicalTime = GetDurationInMusicalTime();
     }
-
+    /*
     public void Render2()
     {
         UpdateTimesData();
@@ -268,7 +268,7 @@ public abstract class Clip
             Track.SetDraggedClip(null);
         }
     }
-
+    */
     public void Render()
     {
         UpdateTimesData();

@@ -69,6 +69,28 @@ public class PluginChainSampleProvider : ISampleProvider
         }
     }
 
+    public void RemoveAllPlugins()
+    {
+        // Dispose and remove instrument
+        if (_pluginInstrument is VstAudioProcessor vstInstrument)
+        {
+            vstInstrument.DeleteRequested = true;
+            vstInstrument.VstPlugin.Dispose();
+        }
+        _pluginInstrument = null;
+
+        // Dispose and remove all effect plugins
+        foreach (var fxPlugin in _fxPlugins.ToList())
+        {
+            _fxPlugins.Remove(fxPlugin);
+            if (fxPlugin is VstAudioProcessor vstFxPlugin)
+            {
+                vstFxPlugin.DeleteRequested = true;
+                vstFxPlugin.VstPlugin.Dispose();
+            }
+        }
+    }
+
     private void ProcessAudio(IAudioProcessor plugin, ref float[] buffer, int offset, int count, int samplesRead)
     {
         // Create a temporary buffer to hold the processed data

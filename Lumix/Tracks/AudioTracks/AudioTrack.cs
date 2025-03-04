@@ -13,7 +13,7 @@ public class AudioTrack : Track
     public AudioTrack(string name)
     {
         Name = name;
-        Vector4 trackCol = ImGuiTheme.DefaultColors[new Random().Next(0, ImGuiTheme.DefaultColors.Length)];
+        Vector4 trackCol = ImGuiTheme.GetRandomColor();
         Color = trackCol;
         Engine = new TrackAudioEngine(this, AudioSettings.SampleRate);
         Engine.VolumeMeasured += (sender, e) =>

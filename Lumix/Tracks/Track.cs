@@ -13,13 +13,15 @@ using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.Views.Arrangement;
 using Lumix.ImGuiExtensions;
+using static Vanara.PInvoke.User32;
 
 namespace Lumix.Tracks;
 
 public enum TrackType
 {
     Audio,
-    Midi
+    Midi,
+    Group
 }
 
 public abstract class Track
@@ -27,7 +29,7 @@ public abstract class Track
     public abstract TrackType TrackType { get; }
 
     public TrackEngine Engine { get; protected set; }
-    public string Id { get; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     private string _name = string.Empty;
     public string Name { get => _name; protected set { _name = value; } }
@@ -64,6 +66,14 @@ public abstract class Track
     public float DragStartOffsetX { get; private set; } // Store the offset when dragging starts (for clips)
     public bool TrackHasCursor { get; private set; }
 
+    /// <summary>
+    /// Selected time of the track in musical time
+    /// </summary>
+    public TimeSelection TimeSelectionArea { get; protected set; } = new();
+    private long _lastTickSelection;
+
+    public bool IsAreaSelectionMode { get; private set; }
+
     private Clip? _tmpClip;
 
     private Clip? _draggedClip = null; // Track the currently dragged clip
@@ -85,6 +95,64 @@ public abstract class Track
     {
         TrackTopPos = ImGui.GetCursorPosY();
         TrackHasCursor = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
+
+        // Reset selection area
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            TimeSelectionArea.Reset();
+        }
+
+        // Selection area dragging
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered)
+            && !ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
+        {
+            TimeSelectionArea.SetStart(TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true));
+            TimeSelectionArea.SetEnd(TimeSelectionArea.Start);
+            _lastTickSelection = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
+            IsAreaSelectionMode = true;
+        }
+        else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && TrackHasCursor && IsAreaSelectionMode)
+        {
+            // Update selection area
+            var time = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelection, true);
+            if (time == timelineTickStart)
+            {
+                TimeSelectionArea.SetStart(timelineTickStart);
+                TimeSelectionArea.SetEnd(timelineTickStart);
+            }
+            else if (time < timelineTickStart)
+            {
+                TimeSelectionArea.SetEnd(timelineTickStart);
+                TimeSelectionArea.SetStart(time);
+            }
+            else if (time > timelineTickStart)
+            {
+                TimeSelectionArea.SetEnd(time);
+            }
+            MusicalTime selectionLength = TimeSelectionArea.Length;
+            UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.Start.Bars}.{TimeSelectionArea.Start.Beats}.{TimeSelectionArea.Start.Ticks}\n" +
+                $"End: {TimeSelectionArea.End.Bars}.{TimeSelectionArea.End.Beats}.{TimeSelectionArea.End.Ticks}\n" +
+                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLineV2.TicksToSeconds(TimeLineV2.MusicalTimeToTicks(selectionLength)):n1}s)");
+        }
+        else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
+        {
+            // Select all clips in drawed area
+            foreach (var clip in Clips)
+            {
+                if (clip.StartMusicalTime >= TimeSelectionArea.Start && clip.EndMusicalTime <= TimeSelectionArea.End)
+                {
+                    ArrangementView.SelectedClips.Add(clip);
+                }
+            }
+            IsAreaSelectionMode = false;
+        }
+
+        // Draw selection area
+        float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
+        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.Start, true)), ImGui.GetWindowPos().Y);
+        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
+        ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(new Vector4(0.55f, 0.79f, 0.85f, 0.4f)));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
         var vstPlugin = Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
@@ -111,6 +179,17 @@ public abstract class Track
         if (TrackHasCursor && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
             OnDoubleClickLeft();
+        }
+
+        // Create midi clip of selected area
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyDown(ImGuiKey.ModShift) && ImGui.IsKeyPressed(ImGuiKey.M, false)
+            && TimeSelectionArea.HasArea())
+        {
+            if (this is MidiTrack midiTrack)
+            {
+                midiTrack.CreateMidiClip(TimeSelectionArea);
+                TimeSelectionArea.Reset();
+            }
         }
 
         if (ImGui.BeginDragDropTarget())
@@ -141,7 +220,7 @@ public abstract class Track
                     {
                         var vst = new VstPlugin(SidebarView.DraggedFilePath);
                         var vstProcessor = new VstAudioProcessor(vst);
-                        if (TrackType == TrackType.Audio)
+                        if (TrackType == TrackType.Audio || TrackType == TrackType.Group)
                         {
                             if (vst.PluginType != VstType.VSTi)
                             {
@@ -151,7 +230,7 @@ public abstract class Track
                             {
                                 vst.Dispose();
                                 User32.MessageBox(IntPtr.Zero,
-                                    "Can't add vst instrument to audio track",
+                                    "Can't add vst instrument to this track",
                                     "Error",
                                     User32.MB_FLAGS.MB_ICONERROR | User32.MB_FLAGS.MB_TOPMOST);
                             }
@@ -318,27 +397,62 @@ public abstract class Track
         var duplicated = Clips.FirstOrDefault(clip => clip.DuplicateRequested);
         if (duplicated != null)
         {
+            // If an area is selected, create clip at end of the area, else at the end of the clip
+            // TODO: if multiple clips are selected all but first have wrong start time
+            bool hasTimeSelection = TimeSelectionArea.HasArea();
+            long newClipTime = hasTimeSelection ?
+                TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)
+                : duplicated.StartTick + duplicated.DurationTicks;
+
+            // If an area is selected, shift it by its length
+            if (hasTimeSelection)
+            {
+                MusicalTime timeSelectionLength = TimeSelectionArea.Length;
+                TimeSelectionArea.AddToEnd(timeSelectionLength);
+                TimeSelectionArea.AddToStart(timeSelectionLength);
+            }
+
             if (duplicated is AudioClip audioClip)
             {
-                var copy = new AudioClip(this as AudioTrack, new AudioClipData(audioClip.Clip.AudioFileReader.FileName),
-                    audioClip.StartTick + audioClip.DurationTicks);
+                var copy = new AudioClip(this as AudioTrack, new AudioClipData(audioClip.Clip.AudioFileReader.FileName), newClipTime);
                 Clips.Add(copy);
                 ArrangementView.SelectedClips.Clear();
                 ArrangementView.SelectedClips.Add(copy);
-                SetDraggedClip(copy);
+                if (!hasTimeSelection)
+                    SetDraggedClip(copy);
                 duplicated.DuplicateRequested = false;
             }
             else if (duplicated is MidiClip midiClip)
             {
-                var copy = new MidiClip(this as MidiTrack, midiClip.MidiClipData, midiClip.StartTick + midiClip.DurationTicks);
-                Clips.Add(copy);
                 ArrangementView.SelectedClips.Clear();
-                ArrangementView.SelectedClips.Add(copy);
-                SetDraggedClip(copy);
+                var copy_clip = new MidiClip(this as MidiTrack, midiClip.MidiClipData, newClipTime)
+                {
+                    Enabled = midiClip.Enabled,
+                    Color = midiClip.Color
+                };
+                this.Clips.Add(copy_clip);
+                if (!hasTimeSelection)
+                    SetDraggedClip(copy_clip);
                 duplicated.DuplicateRequested = false;
             }
         }
-
+        
+        // Draw timeline line
+        if (this == DevicesView.SelectedTrack)
+        {
+            float xOffset; 
+            if (!TimeLineV2.IsPlaying())
+            {
+                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
+            }
+            else
+            {
+                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetLastTickStart()) - ArrangementView.ArrangementScroolX;
+            }
+            ImGui.GetWindowDrawList().AddLine(new Vector2(xOffset, ImGui.GetWindowPos().Y),
+                new Vector2(xOffset, ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y),
+                ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)), 1.5f);
+        }
     }
 
     private void RenderGridLines(float viewportWidth, float trackHeight)
@@ -425,6 +539,31 @@ public abstract class Track
         ImGui.PopStyleColor(1);
         InfoBox.SetInfoData("Track name", "Name of the track.");
 
+
+        if (UiElement.Button($"{FontAwesome6.ArrowUp}", new(22, 25)))
+        {
+            var copy = this;
+            int idx = ArrangementView.Tracks.IndexOf(this);
+            if (idx > 0)
+            {
+                var target = ArrangementView.Tracks[idx - 1];
+                ArrangementView.Tracks[idx] = target;
+                ArrangementView.Tracks[idx - 1] = copy;
+            }
+        }
+        ImGui.SameLine();
+        if (UiElement.Button($"{FontAwesome6.ArrowDown}", new(22, 25)))
+        {
+            var copy = this;
+            int idx = ArrangementView.Tracks.IndexOf(this);
+            if (idx < ArrangementView.Tracks.Count - 1)
+            {
+                var target = ArrangementView.Tracks[idx + 1];
+                ArrangementView.Tracks[idx] = target;
+                ArrangementView.Tracks[idx + 1] = copy;
+            }
+        }
+
         ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.GetFrameHeightWithSpacing() - 5);
         var trackIcon = TrackType == TrackType.Audio ? Fontaudio.LogoAudiobus : FontAwesome6.BarsStaggered;
         var iconFont = TrackType == TrackType.Audio ? Fontaudio.IconFontPtr : ImGui.GetIO().Fonts.Fonts[0];
@@ -505,7 +644,7 @@ public abstract class Track
             if (UiElement.Toggle($"{Fontaudio.Solo}##track_solo", _solo, new Vector4(0.17f, 0.49f, 0.85f, 1f), new(35, 25)))
             {
                 _solo = !_solo;
-                ArrangementView.Tracks.ForEach(track =>
+                ArrangementView.Tracks.ToList().ForEach(track =>
                 {
                     if (track == this)
                     {
@@ -527,14 +666,19 @@ public abstract class Track
             }
             Fontaudio.Pop();
             InfoBox.SetInfoData("Solo toggle", "Mute all tracks except this one");
-            ImGui.SameLine();
-            Fontaudio.Push();
-            if (UiElement.Toggle($"{Fontaudio.Armrecording}##track_record", _recordOnStart, new Vector4(0.88f, 0.20f, 0.16f, 1f), new(35, 25)))
+
+            // arm recording
+            if (this.TrackType != TrackType.Group)
             {
-                _recordOnStart = !_recordOnStart;
+                ImGui.SameLine();
+                Fontaudio.Push();
+                if (UiElement.Toggle($"{Fontaudio.Armrecording}##track_record", _recordOnStart, new Vector4(0.88f, 0.20f, 0.16f, 1f), new(35, 25)))
+                {
+                    _recordOnStart = !_recordOnStart;
+                }
+                Fontaudio.Pop();
+                InfoBox.SetInfoData("Track recording", "Start audio recording when record button is pressed");
             }
-            Fontaudio.Pop();
-            InfoBox.SetInfoData("Track recording", "Start audio recording when record button is pressed");
 
             ImGui.Spacing();
 
@@ -587,11 +731,103 @@ public abstract class Track
         }
         if (ImGui.MenuItem("Duplicate", "Ctrl+D"))
         {
+            if (this is AudioTrack)
+            {
+                // Create new track and copy data
+                var track = ArrangementView.NewAudioTrack(this.Name, ArrangementView.Tracks.IndexOf(this) + 1);
+                foreach (AudioClip clip in Clips.Cast<AudioClip>())
+                {
+                    var copy_clip = new AudioClip(track, clip.Clip, clip.StartTick) { 
+                        Enabled = clip.Enabled,
+                        Color = clip.Color
+                    };
+                    track.Clips.Add(copy_clip);
+                }
+                track._enabled = this.Enabled;
+                track._volume = this.Volume;
+                float linearVolume = (float)Math.Pow(10, track._volume / 20);
+                track.Engine.StereoSampleProvider.SetGain(linearVolume);
+                track._pan = this.Pan;
+                float mappedPan = track._pan / 50f;
+                track.Engine.StereoSampleProvider.Pan = mappedPan;
+                track._solo = this.Solo;
+                track._recordOnStart = this.RecordOnStart;
+                track._color = this.Color;
 
+                // Copy audio engine with plugins chain || TODO: COPY PLUGIN SETTINGS
+                track.Engine.PluginChainSampleProvider.RemoveAllPlugins();
+                foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
+                {
+                    var plug = fxPlugin.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                    else
+                    {
+                        var builtIn = Activator.CreateInstance(fxPlugin.GetType());
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                    }
+                }
+            }
+            else if (this is MidiTrack)
+            {
+                // Create new track and copy data
+                var track = ArrangementView.NewMidiTrack(this.Name, ArrangementView.Tracks.IndexOf(this) + 1);
+                foreach (MidiClip clip in Clips.Cast<MidiClip>())
+                {
+                    var copy_clip = new MidiClip(track, clip.MidiClipData, clip.StartTick) {
+                        Enabled = clip.Enabled,
+                        Color = clip.Color
+                    };
+                    track.Clips.Add(copy_clip);
+                }
+                track._enabled = this.Enabled;
+                track._volume = this.Volume;
+                float linearVolume = (float)Math.Pow(10, track._volume / 20);
+                track.Engine.StereoSampleProvider.SetGain(linearVolume);
+                track._pan = this.Pan;
+                float mappedPan = track._pan / 50f;
+                track.Engine.StereoSampleProvider.Pan = mappedPan;
+                track._solo = this.Solo;
+                track._recordOnStart = this.RecordOnStart;
+                track._color = this.Color;
+
+                // Copy midi engine with plugins chain || TODO: COPY PLUGIN SETTINGS
+                track.Engine.PluginChainSampleProvider.RemoveAllPlugins();
+                var vsti = this.Engine.PluginChainSampleProvider.PluginInstrument;
+                if (vsti != null)
+                {
+                    var plug = vsti.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                }
+                foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
+                {
+                    var plug = fxPlugin.GetPlugin<VstPlugin>();
+                    if (plug != null)
+                    {
+                        var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
+                        var vstAudioProcessor = new VstAudioProcessor(vst);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                    }
+                    else
+                    {
+                        var builtIn = Activator.CreateInstance(fxPlugin.GetType());
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                    }
+                }
+            }         
         }
         if (ImGui.MenuItem("Delete", "Del"))
         {
-            DeleteNextFrame = true;
+            ArrangementView.Tracks.Remove(this);
         }
         ImGui.Spacing();
         ImGui.Separator();
@@ -605,19 +841,29 @@ public abstract class Track
         ImGui.Spacing();
         if (ImGui.MenuItem("Insert Audio Track", "Ctrl+T"))
         {
-
+            ArrangementView.NewAudioTrack($"Audio Track {ArrangementView.Tracks.Count}", ArrangementView.Tracks.IndexOf(this) + 1);
         }
         if (ImGui.MenuItem("Insert Midi Track", "Ctrl+Shift+T"))
         {
-
+            ArrangementView.NewMidiTrack($"Midi Track {ArrangementView.Tracks.Count}", ArrangementView.Tracks.IndexOf(this) + 1);
         }
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        if (ImGui.MenuItem("Assign color to clips"))
+        {
+            foreach (var clip in Clips)
+                clip.Color = _color;
+        }
+        ImGui.ColorEdit4("Track Color", ref _color, ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoInputs);
         ImGui.PopStyleColor();
     }
 
 
     // flag of popup menu
     private bool _renameRequested;
-    public bool DeleteNextFrame { get; private set; }
 
     private bool _hasDropped = false; // Flag to prevent multiple additions during one drop
 }

@@ -69,9 +69,19 @@ public static class TimeLineV2
         return _currentTick;
     }
 
+    public static long GetLastTickStart()
+    { 
+        return _lastTickStart; 
+    }
+
     public static void SetCurrentTick(long ticks)
     {
         _currentTick = ticks;
+    }
+
+    public static void SetLastTickSart(long ticks)
+    {
+        _lastTickStart = ticks;
     }
 
     public static double TicksToSeconds(long ticks, bool useTempo = true)
@@ -153,6 +163,6 @@ public static class TimeLineV2
     public static long SnapToGrid(long tick)
     {
         long gridSpacing = (long)(TimeLineV2.PPQ * TimeLineV2.BeatsPerBar);
-        return (tick / gridSpacing) * gridSpacing;
+        return (long)Math.Round((double)tick / gridSpacing) * gridSpacing;
     }
 }

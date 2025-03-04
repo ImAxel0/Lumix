@@ -63,6 +63,11 @@ public class MasterAudioEngine : IDisposable
         masterMixer.RemoveAllMixerInputs();
     }
 
+    public void RemoveTrack(Track track)
+    {
+        masterMixer.RemoveMixerInput(track.Engine.GetTrackAudio());
+    }
+
     public void AddMidiTrack(TrackMidiEngine track)
     {
         // Add the track's metering-enabled audio to the master mixer

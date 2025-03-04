@@ -47,6 +47,15 @@ public class MidiClip : Clip
         StartTick = startingTime;
     }
 
+    public MidiClip(MidiTrack parent, TimeSelection time)
+    {
+        Track = parent;
+        Color = parent.Color;
+        _midiClipData = new MidiClipData(time);
+        _pianoRollEditor = new PianoRoll(this, Track as MidiTrack);
+        StartTick = TimeLineV2.MusicalTimeToTicks(time.Start, true);
+    }
+
     public void UpdateClipData(MidiClipData newdata)
     {
         _midiClipData = newdata;

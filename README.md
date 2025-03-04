@@ -2,7 +2,7 @@
  <img src="https://i.imgur.com/PhXPmxf.png" width="150" height="150" />
 </p>
 
-# Lumix ![GitHub License](https://img.shields.io/github/license/ImAxel0/Lumix) [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FImAxel0%2FLumix&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Views&edge_flat=false)](https://hits.seeyoufarm.com) ![GitHub Repo stars](https://img.shields.io/github/stars/ImAxel0/Lumix)
+# Lumix ![GitHub License](https://img.shields.io/github/license/ImAxel0/Lumix) [![Scc Count Badge](https://sloc.xyz/github/ImAxel0/Lumix/?category=code)](https://github.com/ImAxel0/Lumix/)
 
 **... is a digital audio workstation (DAW) currently under development, with an Ableton Live heavily inspired ui and workflow.**
 
