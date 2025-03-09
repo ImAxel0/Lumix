@@ -94,14 +94,14 @@ public static class MidiClipView
                     if (UiElement.Button($"{FontAwesome6.Divide}2", new Vector2(ImGui.GetWindowSize().X / 2, 0)))
                     {
                         SelectedMidiClip.MidiClipData.MidiFile.Resize(0.5f);
-                        SelectedMidiClip.PianoRollEditor._notes = SelectedMidiClip.MidiClipData.MidiFile.GetNotes().ToList();
+                        SelectedMidiClip.PianoRollEditor._notes = SelectedMidiClip.MidiClipData.Notes;
                         SelectedMidiClip.UpdateClipData(new MidiClipData(SelectedMidiClip.PianoRollEditor.ToMidiFile()));
                     }
                     ImGui.SameLine();
                     if (UiElement.Button($"{FontAwesome6.X}2", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
                     {
                         SelectedMidiClip.MidiClipData.MidiFile.Resize(2);
-                        SelectedMidiClip.PianoRollEditor._notes = SelectedMidiClip.MidiClipData.MidiFile.GetNotes().ToList();
+                        SelectedMidiClip.PianoRollEditor._notes = SelectedMidiClip.MidiClipData.Notes;
                         SelectedMidiClip.UpdateClipData(new MidiClipData(SelectedMidiClip.PianoRollEditor.ToMidiFile()));
                     }
                     if (UiElement.Button("Reverse", new Vector2(ImGui.GetWindowSize().X / 2, 0)))
