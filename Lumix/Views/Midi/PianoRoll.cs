@@ -173,6 +173,19 @@ public class PianoRoll
         {
             _selectedNotes.ForEach(n => n.Enabled = !n.Enabled);
         }
+
+        // Notes duplication
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsMouseClicked(ImGuiMouseButton.Left, false))
+        {
+            foreach (var note in _selectedNotes.ToList())
+            {
+                var clone = note.Data.Clone();
+                _selectedNotes.Remove(note);
+                var newNote = new PNote((Note)clone); 
+                _notes.Add(newNote);
+                _selectedNotes.Add(newNote);
+            }
+        }
     }
 
     public void Render()
@@ -362,6 +375,9 @@ public class PianoRoll
         }
 
         // Bars:Beats:Ticks timeline
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.12f, 0.12f, 0.12f, 1f));
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 0);
+        ImGui.BeginChild("bars_timeline", new Vector2(ImGui.GetWindowSize().X, 20), ImGuiChildFlags.None, ImGuiWindowFlags.None);
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
         {
             float xPosition = TimeToPosition(tick) - _scrollX + _windowPos.X + KeyWidth;
@@ -371,10 +387,13 @@ public class PianoRoll
             if (tick % barSpacing == 0 && xPosition > _windowPos.X + KeyWidth)
             {
                 ImGui.GetWindowDrawList().AddText(new(xPosition, ImGui.GetWindowPos().Y),
-                    ImGui.GetColorU32(ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]),
+                    ImGui.GetColorU32(new Vector4(1, 1, 1, 0.5f)),
                     $"{musicalTime.Bars}.{musicalTime.Beats}");
             }
         }
+        ImGui.PopStyleColor();
+        ImGui.PopStyleVar();
+        ImGui.EndChild();
     }
 
     private float TimeToPosition(long ticks)
@@ -437,7 +456,19 @@ public class PianoRoll
             if (rectEnd.X < _windowPos.X + KeyWidth)
                 continue;
 
-            var noteColor = note.Enabled ? _midiClip.Color : Vector4.Zero; // new Vector4(0.3f, 0.7f, 0.3f, 1.0f);          
+            var noteColor = note.Enabled ? _midiClip.Color : Vector4.Zero;
+
+            float velocityScale = note.Data.Velocity / 127f;
+            float minBrightness = 0.2f;
+
+            // Calculate the maximum color channel value to preserve the color's ratios
+            float maxChannel = Math.Max(noteColor.X, Math.Max(noteColor.Y, noteColor.Z));
+            if (maxChannel > 0)
+            {
+                noteColor.X = Math.Max(minBrightness * (noteColor.X / maxChannel), noteColor.X * velocityScale);
+                noteColor.Y = Math.Max(minBrightness * (noteColor.Y / maxChannel), noteColor.Y * velocityScale);
+                noteColor.Z = Math.Max(minBrightness * (noteColor.Z / maxChannel), noteColor.Z * velocityScale);
+            }
 
             drawList.AddRectFilled(rectStart + new Vector2(0, 1), rectEnd - new Vector2(0, 1), ImGui.ColorConvertFloat4ToU32(noteColor), 2);
             drawList.AddRect(rectStart, rectEnd, note.Enabled ? ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, 0.3f)) 
@@ -451,7 +482,7 @@ public class PianoRoll
             if (_vZoom >= 0.3f && ImGui.CalcTextSize(noteName).X < rectEnd.X - rectStart.X) // draw notes text
                 drawList.AddText(new Vector2(rectStart.X + 2, 
                     rectStart.Y + (rectEnd.Y - rectStart.Y - ImGui.CalcTextSize(noteName).Y) / 2),
-                    note.Enabled ? ImGui.GetColorU32(new Vector4(0, 0, 0, 1)) : ImGui.GetColorU32(ImGui.GetStyle().Colors[(int)ImGuiCol.Text]),
+                    note.Enabled && note.Data.Velocity > 50 ? ImGui.GetColorU32(new Vector4(0, 0, 0, 1)) : ImGui.GetColorU32(ImGui.GetStyle().Colors[(int)ImGuiCol.Text]),
                     noteName);
 
             bool noteHovered = ImGui.IsMouseHoveringRect(rectStart, rectEnd);
