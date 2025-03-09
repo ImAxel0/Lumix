@@ -121,6 +121,7 @@ public class PianoRoll
                 _scrollY = Math.Clamp(_scrollY - _noteHeight, 0f, TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y);
             }
 
+            HandleOverlappingNotes();
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
         else if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
@@ -136,6 +137,7 @@ public class PianoRoll
                 _scrollY = Math.Clamp(_scrollY + _noteHeight, 0f, TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y);
             }
 
+            HandleOverlappingNotes();
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
 
@@ -149,6 +151,7 @@ public class PianoRoll
             else
                 _selectedNotes.ForEach(n => n.Time = n.Time + GetTicksInBar());
 
+            HandleOverlappingNotes();
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
         else if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow))
@@ -160,6 +163,7 @@ public class PianoRoll
             else
                 _selectedNotes.ForEach(n => n.Time = Math.Clamp(n.Time - GetTicksInBar(), 0, long.MaxValue));
 
+            HandleOverlappingNotes();
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
     }
@@ -743,10 +747,12 @@ public class PianoRoll
                 };
                 _currentNote.LengthChanged += (sender, e) =>
                 {
+                    HandleOverlappingNotes();
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                 };
                 _currentNote.TimeChanged += (sender, e) =>
                 {
+                    HandleOverlappingNotes();
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                 };
                 _notes.Add(_currentNote);
@@ -780,6 +786,7 @@ public class PianoRoll
                 if (row < _lastSelectedRow)
                 {
                     _selectedNotes.ForEach(n => n.NoteNumber = (SevenBitNumber)Math.Clamp(n.NoteNumber + new SevenBitNumber(1), 21, 108));
+                    HandleOverlappingNotes();
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSelectedRow = row;
 
@@ -796,6 +803,7 @@ public class PianoRoll
                 else if (row > _lastSelectedRow)
                 {
                     _selectedNotes.ForEach(n => n.NoteNumber = (SevenBitNumber)Math.Clamp(n.NoteNumber - new SevenBitNumber(1), 21, 108));
+                    HandleOverlappingNotes();
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSelectedRow = row;
 
@@ -848,6 +856,51 @@ public class PianoRoll
     private int? _lastSelectedRow = null;
     private long? _lastSnapTick = null;
     private bool _movingNotes;
+
+    public void HandleOverlappingNotes()
+    {
+        foreach (var note in _selectedNotes.ToList())
+        {
+            foreach (var other in _notes.ToList())
+            {
+                if (note != other && note.NoteNumber == other.NoteNumber)
+                {
+                    long noteStart = note.Time;
+                    long noteEnd = note.Time + note.Length;
+                    long otherStart = other.Time;
+                    long otherEnd = other.Time + other.Length;
+
+                    // Check for overlap
+                    if (noteStart < otherEnd && noteEnd > otherStart)
+                    {
+                        if (noteStart <= otherStart && noteEnd >= otherEnd)
+                        {
+                            // Selected note completely covers the other note, remove the other note
+                            _notes.Remove(other);
+                        }
+                        else if (noteStart > otherStart && noteEnd < otherEnd)
+                        {
+                            // Selected note is inside the other note, split the other note
+                            var newNote = new Note(other.NoteNumber, otherEnd - noteEnd, noteEnd);
+                            _notes.Add(newNote);
+                            other.Length = noteStart - otherStart;
+                        }
+                        else if (noteStart <= otherStart)
+                        {
+                            // Selected note overlaps the start of the other note, shorten the other note
+                            other.Time = noteEnd;
+                            other.Length = otherEnd - noteEnd;
+                        }
+                        else
+                        {
+                            // Selected note overlaps the end of the other note, shorten the other note
+                            other.Length = noteStart - otherStart;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private long GetTicksAtCursor()
     {
