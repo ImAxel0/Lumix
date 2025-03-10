@@ -5,7 +5,6 @@ using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.MusicTheory;
 using System.Numerics;
-//using Note = Melanchall.DryWetMidi.Interaction.Note;
 using Lumix.Clips.MidiClips;
 using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Arrangement;
@@ -448,8 +447,7 @@ public class PianoRoll
             float noteDuration = (float)note.Data.LengthAs<MetricTimeSpan>(_midiClip.MidiClipData.TempoMap).TotalSeconds;
             noteStartTime = TimeToPosition(TimeLineV2.SecondsToTicks(noteStartTime, false));
             noteDuration = TimeToPosition(TimeLineV2.SecondsToTicks(noteDuration, false));
-            //noteStartTime = noteStartTime * 120 * _zoom;
-            //noteDuration = noteDuration * 120 * _zoom;
+
             Vector2 rectStart = _windowPos + new Vector2(KeyWidth + noteStartTime - _scrollX, row * _noteHeight * (_vZoom * 10) - _scrollY);
             Vector2 rectEnd = _windowPos + new Vector2(KeyWidth + noteStartTime + noteDuration - _scrollX, (row + 1) * _noteHeight * (_vZoom * 10) - _scrollY);
 
@@ -822,8 +820,24 @@ public class PianoRoll
                 _lastSelectedRow ??= row;
                 _lastSnapTick ??= SnapToGrid(tick);
 
+                bool velocityChange = false;
+                if (ImGui.IsKeyDown(ImGuiKey.ModAlt))
+                {
+                    velocityChange = true;
+                    float delta = ImGui.GetIO().MouseDelta.Y;
+                    _selectedNotes.ForEach(note => {
+                        var vel = note.Data.Velocity - delta;
+                        note.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);
+                    });
+
+                    if (delta != 0)
+                    {
+                        _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                    }
+                }
+
                 // Up and Down movement
-                if (row < _lastSelectedRow)
+                if (row < _lastSelectedRow && !velocityChange)
                 {
                     _selectedNotes.ForEach(n => n.Data.NoteNumber = (SevenBitNumber)Math.Clamp(n.Data.NoteNumber + new SevenBitNumber(1), 21, 108));
                     HandleOverlappingNotes();
@@ -840,7 +854,7 @@ public class PianoRoll
                         _lastSentNoteNum = RowToNoteNumber(row);
                     }
                 }
-                else if (row > _lastSelectedRow)
+                else if (row > _lastSelectedRow && !velocityChange)
                 {
                     _selectedNotes.ForEach(n => n.Data.NoteNumber = (SevenBitNumber)Math.Clamp(n.Data.NoteNumber - new SevenBitNumber(1), 21, 108));
                     HandleOverlappingNotes();
@@ -859,13 +873,13 @@ public class PianoRoll
                 }
 
                 // Right and Left movement
-                if (SnapToGrid(tick) < _lastSnapTick)
+                if (SnapToGrid(tick) < _lastSnapTick && !velocityChange)
                 {
                     _selectedNotes.ForEach(n => n.Data.Time = Math.Clamp(n.Data.Time - GetTicksInBar(), 0, long.MaxValue));
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
                     _lastSnapTick = SnapToGrid(tick);
                 }
-                else if (SnapToGrid(tick) > _lastSnapTick)
+                else if (SnapToGrid(tick) > _lastSnapTick && !velocityChange)
                 {
                     _selectedNotes.ForEach(n => n.Data.Time = Math.Clamp(n.Data.Time + GetTicksInBar(), 0, long.MaxValue));
                     _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
