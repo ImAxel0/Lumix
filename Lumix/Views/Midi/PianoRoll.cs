@@ -201,9 +201,39 @@ public class PianoRoll
             {
                 _keysSound = !_keysSound;
             }
-            ImGui.Text("Zoom");
-            ImGui.Text($"{FontAwesome6.ArrowsLeftRightToLine} {(int)(_zoom * 10)}x/20");
-            ImGui.Text($"{FontAwesome6.ArrowDownUpAcrossLine} {(int)(_vZoom * 10)}x/20");
+
+            if (ImGui.BeginCombo("H-Zoom", $"{_zoom * 10:n0}x", ImGuiComboFlags.WidthFitPreview | ImGuiComboFlags.HeightLargest))
+            {
+                for (int i = 1; i <= 20; i++)
+                {
+                    if (ImGui.Selectable($"{i}x"))
+                    {
+                        _zoom = i / 10f;
+                        float maxScrollX = TimeToPosition(_midiClip.DurationTicks);
+                        _scrollX = Math.Clamp(_scrollX, 0f, maxScrollX);
+                        _scrollY = Math.Clamp(_scrollY, 0f, TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y);
+                    }
+                }
+                ImGui.EndCombo();
+            }
+
+            if (ImGui.BeginCombo("V-Zoom", $"{_vZoom * 10:n0}x", ImGuiComboFlags.WidthFitPreview | ImGuiComboFlags.HeightLargest))
+            {
+                for (int i = 1; i <= 20; i++)
+                {
+                    if (ImGui.Selectable($"{i}x"))
+                    {
+                        _vZoom = i / 10f;
+                        float maxScrollX = TimeToPosition(_midiClip.DurationTicks);
+                        _scrollX = Math.Clamp(_scrollX, 0f, maxScrollX);
+                        _scrollY = Math.Clamp(_scrollY, 0f, TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y);
+                    }
+                }
+                ImGui.EndCombo();
+            }
+
+            //ImGui.Text($"{FontAwesome6.ArrowsLeftRightToLine} {(int)(_zoom * 10)}x/20");
+            //ImGui.Text($"{FontAwesome6.ArrowDownUpAcrossLine} {(int)(_vZoom * 10)}x/20");
             ImGui.Separator();
             int scroll = (int)(_scrollY / (TotalKeys * _noteHeight * (_vZoom * 10) - _windowSize.Y) * 100);
             scroll = Math.Clamp(scroll, 0, int.MaxValue);
