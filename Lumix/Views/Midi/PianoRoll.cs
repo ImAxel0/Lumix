@@ -828,6 +828,7 @@ public class PianoRoll
                     _selectedNotes.ForEach(note => {
                         var vel = note.Data.Velocity - delta;
                         note.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);
+                        UiElement.Tooltip($"Velocity [{note.Data.NoteName.ToString().Replace("Sharp", "#")}{note.Data.Octave}]: {note.Data.Velocity}");
                     });
 
                     if (delta != 0)
