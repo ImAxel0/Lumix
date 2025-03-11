@@ -51,13 +51,27 @@ Several open source libraries are being used:
 - Project saving, loading and export
 ---
 
-### 20-02-2025
-Source code is now available to compile from all users who would like to try it.
+<h2 align="center">
+ Gallery :camera:
+</h2>
 
-### 15-01-2025
-![Lumix 15-01-2025](https://github.com/user-attachments/assets/93d2e266-48d8-4aac-8461-66a9d5bb8939)
+<p align="center">
+ <b>Arrangement</b>
+</p>
 
-[Development playlist](https://www.youtube.com/playlist?list=PLskQuYoe4Bn8Aub8okcEeravu602E4kNM)
+![Lumix arrangement](https://github.com/user-attachments/assets/e37157f1-aaa0-45de-b877-165215a48598)
+
+<p align="center">
+ <b>Piano Roll</b>
+</p>
+
+![Lumix piano roll](https://github.com/user-attachments/assets/5ba67ccd-325a-409a-999e-87ce9fa64f19)
+
+<p align="center">
+ <b>VST Plugins</b>
+</p>
+
+![Lumix plugins](https://github.com/user-attachments/assets/70aa6132-4ce6-459b-9679-7ae36ae93044)
 
 ### Special Thanks To
 - [dear-imgui](https://github.com/ocornut/imgui) and [ImGui.NET](https://github.com/ImGuiNET/ImGui.NET)
