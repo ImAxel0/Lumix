@@ -850,11 +850,10 @@ public class PianoRoll
                 _lastSelectedRow ??= row;
                 _lastSnapTick ??= SnapToGrid(tick);
 
-                bool velocityChange = false;
-                if (ImGui.IsKeyDown(ImGuiKey.ModAlt))
+                bool velocityChange = ImGui.IsKeyDown(ImGuiKey.ModAlt);
+                if (velocityChange)
                 {
-                    velocityChange = true;
-                    float delta = ImGui.GetIO().MouseDelta.Y;
+                    float delta = Math.Clamp(ImGui.GetIO().MouseDelta.Y, -1f, 1f);
                     _selectedNotes.ForEach(note => {
                         var vel = note.Data.Velocity - delta;
                         note.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);
