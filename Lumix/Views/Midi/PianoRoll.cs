@@ -173,7 +173,7 @@ public class PianoRoll
             _selectedNotes.ForEach(n => n.Enabled = !n.Enabled);
         }
 
-        // Notes duplication
+        // Notes duplication on Ctrl+LMB
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsMouseClicked(ImGuiMouseButton.Left, false))
         {
             foreach (var note in _selectedNotes.ToList())
@@ -184,6 +184,26 @@ public class PianoRoll
                 _notes.Add(newNote);
                 _selectedNotes.Add(newNote);
             }
+
+            HandleOverlappingNotes();
+            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+        }
+
+        // Notes duplication on Ctrl+D
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyPressed(ImGuiKey.D, false) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
+        {
+            foreach (var note in _selectedNotes.ToList())
+            {
+                var clone = note.Data.Clone();
+                _selectedNotes.Remove(note);
+                var newNote = new PNote((Note)clone);
+                newNote.Data.Time = note.Data.EndTime; // shift time
+                _notes.Add(newNote);
+                _selectedNotes.Add(newNote);
+            }
+
+            HandleOverlappingNotes();
+            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
     }
 
