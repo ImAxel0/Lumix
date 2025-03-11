@@ -829,6 +829,12 @@ public class PianoRoll
             {
                 // We update the note length while dragging
                 _currentNote.Data.Length = Math.Clamp(realTicks - _currentNote.Data.Time, GetTicksInBar(), long.MaxValue);
+
+                // We update the note velocity while dragging
+                float delta = Math.Clamp(ImGui.GetIO().MouseDelta.Y, -1f, 1f);
+                var vel = _currentNote.Data.Velocity - delta;
+                _currentNote.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);
+                UiElement.Tooltip($"Velocity [{_currentNote.Data.NoteName.ToString().Replace("Sharp", "#")}{_currentNote.Data.Octave}]: {_currentNote.Data.Velocity}");
             }
             else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && _currentNote != null)
             {
