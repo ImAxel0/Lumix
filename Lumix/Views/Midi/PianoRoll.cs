@@ -180,12 +180,23 @@ public class PianoRoll
             {
                 var clone = note.Data.Clone();
                 _selectedNotes.Remove(note);
-                var newNote = new PNote((Note)clone); 
+                var newNote = new PNote((Note)clone);
+
+                newNote.Data.LengthChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+                newNote.Data.TimeChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+
                 _notes.Add(newNote);
                 _selectedNotes.Add(newNote);
             }
 
-            HandleOverlappingNotes();
             _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
         }
 
@@ -198,6 +209,18 @@ public class PianoRoll
                 _selectedNotes.Remove(note);
                 var newNote = new PNote((Note)clone);
                 newNote.Data.Time = note.Data.EndTime; // shift time
+
+                newNote.Data.LengthChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+                newNote.Data.TimeChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+
                 _notes.Add(newNote);
                 _selectedNotes.Add(newNote);
             }
@@ -279,7 +302,7 @@ public class PianoRoll
         RenderTimeLine();
         HandleMouseInteraction();
 
-        if (ImGui.BeginPopupContextWindow("piano_roll_popup", ImGuiPopupFlags.MouseButtonRight))
+        if (!ImGui.IsPopupOpen("note_popup") && ImGui.BeginPopupContextWindow("piano_roll_popup", ImGuiPopupFlags.MouseButtonRight))
         {
             RenderPopupMenu();
             ImGui.EndPopup();
@@ -522,6 +545,18 @@ public class PianoRoll
             drawList.AddRect(rectStart, rectEnd, note.Enabled ? ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, 0.3f)) 
                 : ImGui.ColorConvertFloat4ToU32(_midiClip.Color), 2); // border
 
+            ImGui.SetCursorScreenPos(rectStart);
+            ImGui.InvisibleButton("##invisible_button", rectEnd - rectStart);
+
+            if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            {
+                if (!_selectedNotes.Contains(note))
+                {
+                    _selectedNotes.Add(note);
+                }
+                ImGui.OpenPopup("note_popup");
+            }
+
             // Highlight selected notes with border
             if (_selectedNotes.Contains(note))
                 drawList.AddRect(rectStart, rectEnd, ImGui.ColorConvertFloat4ToU32(new Vector4(0.55f, 0.79f, 0.85f, 1f)), 2, ImDrawFlags.None, 2); // border
@@ -648,6 +683,12 @@ public class PianoRoll
             }
         }
 
+        if (ImGui.BeginPopup("note_popup"))
+        {
+            RenderNotePopupMenu();
+            ImGui.EndPopup();
+        }
+
         if (ImGui.IsKeyPressed(ImGuiKey.Delete))
         {
             _selectedNotes.ForEach(note =>
@@ -728,6 +769,47 @@ public class PianoRoll
         ImGui.PopStyleColor();
     }
 
+    private void RenderNotePopupMenu()
+    {
+        ImGui.PushStyleColor(ImGuiCol.Separator, Vector4.One);
+        if (ImGui.MenuItem("Duplicate", "Ctrl+D"))
+        {
+            foreach (var note in _selectedNotes.ToList())
+            {
+                var clone = note.Data.Clone();
+                _selectedNotes.Remove(note);
+                var newNote = new PNote((Note)clone);
+                newNote.Data.Time = note.Data.EndTime; // shift time
+
+                newNote.Data.LengthChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+                newNote.Data.TimeChanged += (sender, e) =>
+                {
+                    HandleOverlappingNotes();
+                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                };
+
+                _notes.Add(newNote);
+                _selectedNotes.Add(newNote);
+            }
+
+            HandleOverlappingNotes();
+            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+        }
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+        string state = _selectedNotes.All(n => n.Enabled) ? "Deactivate Notes" : "Activate Notes";
+        if (ImGui.MenuItem(state, "0"))
+        {
+            _selectedNotes.ForEach(n => n.Enabled = !n.Enabled);
+        }
+        ImGui.PopStyleColor();
+    }
+
     private void HandleMouseInteraction()
     {
         Vector2 mousePos = ImGui.GetMousePos();
@@ -779,7 +861,7 @@ public class PianoRoll
             // If no note is hovered
             if (!_notesHovered.Any(n => n == true))
             {
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsPopupOpen("note_popup"))
                 {
                     _selectedNotes.Clear(); // Deselect all notes
                 }

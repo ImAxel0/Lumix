@@ -67,6 +67,8 @@ public class TrackMidiEngine : TrackEngine, IDisposable
         _playback = midiFile.GetPlayback();
         _playback.TrackProgram = true;
         _playback.TrackNotes = true;
+        _playback.TrackControlValue = true;
+        _playback.TrackPitchValue = true;
         _playback.PlaybackStart = new MetricTimeSpan(TimeSpan.FromSeconds(offset));
         _playback.Speed = TopBarControls.Bpm / 120f;
 
@@ -95,7 +97,7 @@ public class TrackMidiEngine : TrackEngine, IDisposable
                 // handle other CC events like panning, modulation, etc. here.
             }
         };
-
+        
         _playback.Start();
     }
 
