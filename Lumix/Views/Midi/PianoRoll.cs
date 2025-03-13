@@ -176,58 +176,49 @@ public class PianoRoll
         // Notes duplication on Ctrl+LMB
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsMouseClicked(ImGuiMouseButton.Left, false))
         {
-            foreach (var note in _selectedNotes.ToList())
-            {
-                var clone = note.Data.Clone();
-                _selectedNotes.Remove(note);
-                var newNote = new PNote((Note)clone);
-
-                newNote.Data.LengthChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-                newNote.Data.TimeChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-
-                _notes.Add(newNote);
-                _selectedNotes.Add(newNote);
-            }
-
-            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+            DuplicateNotes(false, false);
         }
 
         // Notes duplication on Ctrl+D
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyPressed(ImGuiKey.D, false) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
         {
-            foreach (var note in _selectedNotes.ToList())
+            DuplicateNotes(true);
+        }
+    }
+
+    private void DuplicateNotes(bool shiftTime = false, bool handleOverlaps = true)
+    {
+        foreach (var note in _selectedNotes.ToList())
+        {
+            _selectedNotes.Remove(note);
+            var clone = note.Data.Clone();
+            var newNote = new PNote((Note)clone);
+
+            if (shiftTime)
             {
-                var clone = note.Data.Clone();
-                _selectedNotes.Remove(note);
-                var newNote = new PNote((Note)clone);
                 newNote.Data.Time = note.Data.EndTime; // shift time
-
-                newNote.Data.LengthChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-                newNote.Data.TimeChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-
-                _notes.Add(newNote);
-                _selectedNotes.Add(newNote);
             }
 
-            HandleOverlappingNotes();
-            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+            newNote.Data.LengthChanged += (sender, e) =>
+            {
+                HandleOverlappingNotes();
+                _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+            };
+            newNote.Data.TimeChanged += (sender, e) =>
+            {
+                HandleOverlappingNotes();
+                _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+            };
+
+            _notes.Add(newNote);
+            _selectedNotes.Add(newNote);
         }
+
+        if (handleOverlaps)
+        {
+            HandleOverlappingNotes();
+        }       
+        _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
     }
 
     public void Render()
@@ -774,30 +765,7 @@ public class PianoRoll
         ImGui.PushStyleColor(ImGuiCol.Separator, Vector4.One);
         if (ImGui.MenuItem("Duplicate", "Ctrl+D"))
         {
-            foreach (var note in _selectedNotes.ToList())
-            {
-                var clone = note.Data.Clone();
-                _selectedNotes.Remove(note);
-                var newNote = new PNote((Note)clone);
-                newNote.Data.Time = note.Data.EndTime; // shift time
-
-                newNote.Data.LengthChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-                newNote.Data.TimeChanged += (sender, e) =>
-                {
-                    HandleOverlappingNotes();
-                    _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
-                };
-
-                _notes.Add(newNote);
-                _selectedNotes.Add(newNote);
-            }
-
-            HandleOverlappingNotes();
-            _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+            DuplicateNotes(true);
         }
         ImGui.Spacing();
         ImGui.Separator();
