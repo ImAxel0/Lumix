@@ -932,7 +932,7 @@ public class PianoRoll
                     float delta = Math.Clamp(ImGui.GetIO().MouseDelta.Y, -1f, 1f);
                     _selectedNotes.ForEach(note => {
                         var vel = note.Data.Velocity - delta;
-                        note.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);
+                        note.Data.Velocity = (SevenBitNumber)Math.Clamp(vel, SevenBitNumber.MinValue, SevenBitNumber.MaxValue);                
                         UiElement.Tooltip($"Velocity [{note.Data.NoteName.ToString().Replace("Sharp", "#")}{note.Data.Octave}]: {note.Data.Velocity}");
                     });
 
@@ -1043,6 +1043,18 @@ public class PianoRoll
                             // Selected note is inside the other note, split the other note
                             var data = new Note(other.Data.NoteNumber, otherEnd - noteEnd, noteEnd);
                             var newNote = new PNote(data);
+
+                            newNote.Data.LengthChanged += (sender, e) =>
+                            {
+                                HandleOverlappingNotes();
+                                _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                            };
+                            newNote.Data.TimeChanged += (sender, e) =>
+                            {
+                                HandleOverlappingNotes();
+                                _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
+                            };
+
                             _notes.Add(newNote);
                             other.Data.Length = noteStart - otherStart;
                         }
