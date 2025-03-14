@@ -60,7 +60,7 @@ public static class DevicesView
         else if (vstPlugin != null) // If plugin is external
         {
             bool selected = SelectedPlugins.Contains(plugin);
-            Vector4 menuBarCol = selected ? new Vector4(0.55f, 0.79f, 0.85f, 1) : new Vector4(0.28f, 0.28f, 0.28f, 1);
+            Vector4 menuBarCol = selected ? ImGuiTheme.SelectionCol : new Vector4(0.28f, 0.28f, 0.28f, 1);
             ImGui.PushStyleColor(ImGuiCol.MenuBarBg, menuBarCol);
             ImGui.BeginChild($"plugin_rect{vstPlugin.PluginId}", rectSize, ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar);
 

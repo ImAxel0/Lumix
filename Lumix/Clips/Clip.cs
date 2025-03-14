@@ -281,22 +281,19 @@ public abstract class Clip
         UpdateTimesData();
         ClipWidth = GetClipWidth();
 
-        /* I secondi a cui si trova la clip non cambiano con il livello di ZOOM, ma tengono conto dei BPM */
-        //Time = TimeLinePosition / TopBarControls.Bpm + StartOffset /* / ArrangementView.Zoom */;
-        //TimeLinePosition = TimeLineV2.TimeToPosition(StartTick);
-
         Vector2 mousePos = ImGui.GetMousePos();
 
         ImGui.SetCursorPosX(TimeLineV2.TimeToPosition(StartTick));
         ImGui.SetCursorPosY(Track.TrackTopPos);
 
         bool selected = ArrangementView.SelectedClips.Contains(this);
-        Vector4 backgroundCol = selected ? new Vector4(0.55f, 0.79f, 0.85f, 1f) : Color;
+        Vector4 backgroundCol = selected ? ImGuiTheme.SelectionCol : Color;
         ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? backgroundCol * 0.6f : Enabled ? backgroundCol * 0.6f : Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.MenuBarBg, Enabled ? Color : Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.Border, Color);
         if (ImGui.BeginChild(Id, new(ClipWidth, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar))
         {
+            /*
             var startOffBBT = TimeLineV2.TicksToMusicalTime(StartMarker);
             var endOffBBT = TimeLineV2.TicksToMusicalTime(EndMarker);
             UiElement.Tooltip($"Start: {StartMusicalTime.Bars}:{StartMusicalTime.Beats}:{StartMusicalTime.Ticks}\n" +
@@ -305,7 +302,7 @@ public abstract class Clip
                 $"Duration: {GetDurationInSeconds():n3}\n" +
                 $"Start ofs: {startOffBBT.Bars}:{startOffBBT.Beats}:{startOffBBT.Ticks}\n" +
                 $"End ofs: {endOffBBT.Bars}:{endOffBBT.Beats}:{endOffBBT.Ticks}");
-
+            */
             var drawList = ImGui.GetWindowDrawList();
             Vector2 clipStart = ImGui.GetWindowPos();
             Vector2 clipEnd = ImGui.GetWindowPos() + ImGui.GetWindowSize();

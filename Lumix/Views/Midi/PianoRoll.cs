@@ -550,7 +550,7 @@ public class PianoRoll
 
             // Highlight selected notes with border
             if (_selectedNotes.Contains(note))
-                drawList.AddRect(rectStart, rectEnd, ImGui.ColorConvertFloat4ToU32(new Vector4(0.55f, 0.79f, 0.85f, 1f)), 2, ImDrawFlags.None, 2); // border
+                drawList.AddRect(rectStart, rectEnd, ImGui.ColorConvertFloat4ToU32(ImGuiTheme.SelectionCol), 2, ImDrawFlags.None, 2); // border
 
             string noteName = $"{note.Data.NoteName.ToString().Replace("Sharp", "#")}{note.Data.Octave}";
             if (_vZoom >= 0.3f && ImGui.CalcTextSize(noteName).X < rectEnd.X - rectStart.X) // draw notes text
