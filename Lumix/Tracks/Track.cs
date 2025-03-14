@@ -152,7 +152,7 @@ public abstract class Track
         float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
         Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.Start, true)), ImGui.GetWindowPos().Y);
         Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
-        ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(new Vector4(0.55f, 0.79f, 0.85f, 0.4f)));
+        ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(ImGuiTheme.SelectionCol));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
         var vstPlugin = Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();

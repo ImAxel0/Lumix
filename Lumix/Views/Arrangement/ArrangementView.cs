@@ -272,7 +272,7 @@ public static class ArrangementView
                     if (tick % barSpacing == 0)
                     {
                         ImGui.GetWindowDrawList().AddText(new(xPosition, ImGui.GetWindowPos().Y),
-                            ImGui.GetColorU32(ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]),
+                            ImGui.GetColorU32(ImGui.GetColorU32(new Vector4(1, 1, 1, 0.5f))),
                             $"{musicalTime.Bars}.{musicalTime.Beats}");
                     }
                 }

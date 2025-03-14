@@ -356,8 +356,8 @@ public class ImGuiKnobs
         float angle_min,
         float angle_max)
     {
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.55f, 0.79f, 0.85f, 1));
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.55f, 0.79f, 0.85f, 1));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ImGuiTheme.SelectionCol);
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, ImGuiTheme.SelectionCol);
 
         var knob = KnobWithDrag(
             label,

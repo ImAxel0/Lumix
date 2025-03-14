@@ -5,6 +5,8 @@ namespace Lumix.ImGuiExtensions;
 
 public class ImGuiTheme
 {
+    public static Vector4 SelectionCol = new(0.55f, 0.79f, 0.85f, 1);
+
     public static Vector4[] DefaultColors = {
         HtmlToVec4("#19B75B"),
         HtmlToVec4("#2467C7"),

@@ -8,7 +8,7 @@ public class AudioFolders
         "C:\\Users\\Alex\\Desktop\\Sample",
         "C:\\Users\\Alex\\Desktop\\Reference",
         "C:\\Users\\Alex\\Desktop\\Midi",
-        "C:\\Users\\Alex\\Desktop\\Downloads"
+        "C:\\Users\\Alex\\Downloads"
 #endif
     };
 

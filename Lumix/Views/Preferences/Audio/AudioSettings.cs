@@ -1,26 +1,32 @@
 ﻿using Lumix.Tracks.Master;
 using Lumix.Views.Arrangement;
 using Lumix.Views.Sidebar.Preview;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
 namespace Lumix.Views.Preferences.Audio;
 
 public enum AudioDriver
 {
-    WaveOut,
+    Wasapi,
     Asio
 }
 
 public static class AudioSettings
 {
-    public static AudioDriver AudioDriver { get; private set; } = AudioDriver.WaveOut;
+    public static AudioDriver AudioDriver { get; private set; } = AudioDriver.Wasapi;
     public static string DeviceName { get; private set; } = string.Empty;
     public static IWavePlayer OutputDevice { get; private set; }
     public static IWavePlayer InputDevice { get; private set; }
 
-    public static int SampleRate { get; private set; } = 44100;
+    /// <summary>
+    /// FriendlyName, MMDevice
+    /// </summary>
+    public static Dictionary<string, MMDevice?> WasapiDevices { get; private set; } = new();
 
-    public static float WaveOutLatency = 100;
+    public static float WasapiLatency = 50;
+
+    public static int SampleRate { get; private set; } = 44100;
 
     public static void Init(bool driverChange = false)
     {
@@ -39,12 +45,19 @@ public static class AudioSettings
             AudioDriver = AudioDriver.Asio;
             DeviceName = asio.DriverName;
         }
-        else
+        else if (AudioDriver == AudioDriver.Wasapi)
         {
-            var waveOut = new WaveOutEvent() { DesiredLatency = (int)WaveOutLatency };
-            OutputDevice = waveOut;
-            AudioDriver = AudioDriver.WaveOut;
-            DeviceName = waveOut.DeviceNumber.ToString();
+            var deviceEnumerator = new MMDeviceEnumerator();
+            var devices = deviceEnumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+            WasapiDevices.Clear();
+            foreach (MMDevice device in devices)
+            {
+                WasapiDevices.Add(device.FriendlyName, device);
+            }
+            var wasapiOut = new WasapiOut(devices[0], AudioClientShareMode.Exclusive, true, (int)WasapiLatency);
+            OutputDevice = wasapiOut;
+            AudioDriver = AudioDriver.Wasapi;
+            DeviceName = devices[0].FriendlyName;
         }
 #endif
         if (driverChange)
@@ -57,11 +70,6 @@ public static class AudioSettings
     {
         outputDevice.Stop();
         SetOutputDevice(outputDevice, deviceName);
-
-        if (outputDevice is WaveOutEvent waveOut)
-        {
-            waveOut.DesiredLatency = (int)WaveOutLatency;
-        }
 
         // We remove all tracks from the master mixer and create a new master track with the new audio device
         ArrangementView.MasterTrack.AudioEngine.RemoveAllTracks();
@@ -90,7 +98,7 @@ public static class AudioSettings
     {
         switch (AudioDriver)
         {
-            case AudioDriver.WaveOut:
+            case AudioDriver.Wasapi:
                 OutputDevice = outputDevice;
                 DeviceName = deviceName;
                 break;

@@ -28,11 +28,11 @@ public class MidiRenderer
         // Draw MIDI notes
         foreach (var note in midiClipData.Notes)
         {
-            float noteStartTime = (float)note.TimeAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
-            float noteDuration = (float)note.LengthAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
+            float noteStartTime = (float)note.Data.TimeAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
+            float noteDuration = (float)note.Data.LengthAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
 
             float x = containerPos.X + noteStartTime * pixelsPerSecond;
-            float y = containerPos.Y + (_maxNote - note.NoteNumber) * pixelsPerNote;
+            float y = containerPos.Y + (_maxNote - note.Data.NoteNumber) * pixelsPerNote;
             float noteWidth = noteDuration * pixelsPerSecond;
             float noteHeight = pixelsPerNote * 4f;
 
@@ -65,11 +65,11 @@ public class MidiRenderer
         // Draw MIDI notes
         foreach (var note in midiClipData.Notes)
         {
-            float noteStartTime = (float)note.TimeAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
-            float noteDuration = (float)note.LengthAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
+            float noteStartTime = (float)note.Data.TimeAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
+            float noteDuration = (float)note.Data.LengthAs<MetricTimeSpan>(midiClipData.TempoMap).TotalSeconds;
 
             float x = containerPos.X + noteStartTime * pixelsPerSecond * ArrangementView.Zoom;
-            float y = containerPos.Y + (_maxNote - note.NoteNumber) * pixelsPerNote;
+            float y = containerPos.Y + (_maxNote - note.Data.NoteNumber) * pixelsPerNote;
             float noteWidth = noteDuration * pixelsPerSecond * ArrangementView.Zoom;
             float noteHeight = pixelsPerNote * 2f;
 

@@ -4,6 +4,8 @@ using Lumix.Plugins;
 using Melanchall.DryWetMidi.Core;
 using Lumix.Clips.AudioClips;
 using Lumix.SampleProviders;
+using Vanara.PInvoke;
+using Lumix.Views.Arrangement;
 
 namespace Lumix.Tracks.AudioTracks;
 
@@ -43,6 +45,11 @@ public class TrackAudioEngine : TrackEngine, IDisposable
         var sample = new OffsetSampleProvider(input);
         //var skipped = sample.Skip(TimeSpan.FromSeconds(offset)); // it's slow
         var finalSample = sample.Take(TimeSpan.FromSeconds(input.TotalTime.TotalSeconds - endOffset - offset));
+        if (!Mixer.WaveFormat.Equals(finalSample.WaveFormat))
+        {
+            User32.MessageBox(IntPtr.Zero, $"Can't play {Path.GetFileName(input.FileName)}", "WaveFormat exception", User32.MB_FLAGS.MB_ICONWARNING | User32.MB_FLAGS.MB_TOPMOST);
+            return;
+        }
         Mixer.AddMixerInput(ConvertToRightChannelCount(finalSample));
     }
 

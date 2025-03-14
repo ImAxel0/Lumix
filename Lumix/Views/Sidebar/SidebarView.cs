@@ -10,6 +10,7 @@ using Lumix.Clips.Renderers;
 using Lumix.ImGuiExtensions;
 using Lumix.Views.Preferences.AudioFolders;
 using Lumix.FileDialogs;
+using Lumix.Views.Preferences.Plugins;
 
 namespace Lumix.Views.Sidebar;
 
@@ -31,6 +32,7 @@ public class SidebarView
     private static bool _sortAscending = true;
     private static bool _hidden;
     private static float _waveformWidth;
+    private static float _previousWindowSize;
     private static (List<float> samples, float[] peaks, float[] valleys) _waveformData;
     private static MidiClipData _midiClipDataPreview;
     private static bool _lastPreviewIsAudio;
@@ -236,6 +238,13 @@ public class SidebarView
                 {
                     if (_waveformData.peaks != null)
                     {
+                        if (windowSize.X != _previousWindowSize)
+                        {
+                            var (peaks, valleys) = WaveformRenderer.Resize((int)_waveformWidth, _waveformData.samples);
+                            _waveformData.peaks = peaks;
+                            _waveformData.valleys = valleys;
+                            _previousWindowSize = windowSize.X;
+                        }
                         WaveformRenderer.RenderWaveform((_waveformData.peaks, _waveformData.valleys), ImGui.GetCursorScreenPos(), _waveformWidth, ImGui.GetContentRegionAvail().Y, _soundPreview);
                     }
                 }

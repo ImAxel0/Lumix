@@ -81,7 +81,7 @@ public class WaveformRenderer
         Vector4 color = enabled ? Vector4.One : new Vector4(0.8f, 0.8f, 0.8f, 1f);
         float centerY = position.Y + height / 2f; // Middle of the waveform
         float scale = height / 2f; // Scale amplitude to fit height
-        float pixelWidth = width / waveformData.peaks.Length;
+        float pixelWidth = (float)Math.Round(width / waveformData.peaks.Length);
 
         for (int i = 0; i < waveformData.peaks.Length; i++)
         {
@@ -105,7 +105,7 @@ public class WaveformRenderer
 
         float centerY = position.Y + height / 2f; // Middle of the waveform
         float scale = height / 2f;               // Scale amplitude to fit height
-        float pixelWidth = width / waveformData.peaks.Length;
+        float pixelWidth = (float)Math.Round(width / waveformData.peaks.Length);
 
         // Calculate the visible range
         float viewStartX = ArrangementView.WindowPos.X; // Left edge of the arrangement view

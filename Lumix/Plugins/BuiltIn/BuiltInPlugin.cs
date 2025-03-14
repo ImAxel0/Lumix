@@ -27,7 +27,7 @@ public abstract class BuiltInPlugin
     public void RenderRect(IAudioProcessor AudioProcessor)
     {
         bool selected = DevicesView.SelectedPlugins.Contains(AudioProcessor);
-        Vector4 menuBarCol = selected ? new Vector4(0.55f, 0.79f, 0.85f, 1) : new Vector4(0.28f, 0.28f, 0.28f, 1);
+        Vector4 menuBarCol = selected ? ImGuiTheme.SelectionCol : new Vector4(0.28f, 0.28f, 0.28f, 1);
         ImGui.PushStyleColor(ImGuiCol.MenuBarBg, menuBarCol);
         ImGui.BeginChild($"plugin_rect{PluginId}", Vector2.Zero, ImGuiChildFlags.Border | ImGuiChildFlags.AutoResizeX, ImGuiWindowFlags.MenuBar);
 

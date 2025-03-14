@@ -3,6 +3,7 @@ using NAudio.Wave;
 using Lumix.SampleProviders.CachedSounds;
 using Lumix.Views.Arrangement;
 using Lumix.Views.Preferences.Audio;
+using Vanara.PInvoke;
 
 namespace Lumix.Views.Sidebar.Preview;
 
@@ -55,6 +56,11 @@ class AudioPreviewEngine : IDisposable
 
     private void AddMixerInput(ISampleProvider input)
     {
+        if (!previewMixer.WaveFormat.Equals(input.WaveFormat))
+        {
+            User32.MessageBox(IntPtr.Zero, "Can't play wave file", "WaveFormat exception", User32.MB_FLAGS.MB_ICONWARNING | User32.MB_FLAGS.MB_TOPMOST);
+            return;
+        }
         previewMixer.AddMixerInput(ConvertToRightChannelCount(input));
     }
 
