@@ -34,7 +34,13 @@ public abstract class Clip
     /// </summary>
     public float ClipWidth { get; protected set; }
 
-    #region Time properties
+    private Vector4 _color;
+    /// <summary>
+    /// Clip color
+    /// </summary>
+    public Vector4 Color { get => _color; set { _color = value; } }
+
+    #region Clip time properties
 
     /// <summary>
     /// Arrangement clip starting time in ticks
@@ -65,8 +71,20 @@ public abstract class Clip
     /// Duration of the clip in Musical Time
     /// </summary>
     public MusicalTime DurationMusicalTime { get; protected set; }
-    
+
+    /// <summary>
+    /// Cutted portion in ticks from start of the clip
+    /// </summary>
+    public long StartMarker { get; protected set; }
+
+    /// <summary>
+    /// Cutted portion in ticks from end of the clip
+    /// </summary>
+    public long EndMarker { get; protected set; }
+
     #endregion
+
+    #region Flag properties
 
     /// <summary>
     /// Flag used to move clip between tracks
@@ -83,28 +101,17 @@ public abstract class Clip
     /// </summary>
     public bool MenuBarIsHovered { get; protected set; }
 
+    /// <summary>
+    /// Flag used to determine if this clip has been fired during current playback
+    /// </summary>
     public bool HasPlayed { get; set; }
-
-    private Vector4 _color;
-    /// <summary>
-    /// Clip color
-    /// </summary>
-    public Vector4 Color { get => _color; set { _color = value; } }
-
-    /// <summary>
-    /// Cutted portion in ticks from start of the clip
-    /// </summary>
-    public long StartOffset { get; protected set; }
-
-    /// <summary>
-    /// Cutted portion in ticks from end of the clip
-    /// </summary>
-    public long EndOffset { get; protected set; }
 
     // Resizing flags
     private bool _isLeftResizing;
     private bool _isRightResizing;
     private float _resizeMouseStartX;
+
+    #endregion
 
     public void Play(AudioFileReader audioFile, float offset, float endOffset)
     {
@@ -131,7 +138,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetStartTimeInMusicalTime()
     {
-        return TimeLineV2.TicksToMusicalTime(StartTick + StartOffset, true);
+        return TimeLineV2.TicksToMusicalTime(StartTick + StartMarker, true);
     }
 
     /// <summary>
@@ -151,7 +158,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetDurationInMusicalTime()
     {
-        return TimeLineV2.TicksToMusicalTime(DurationTicks - StartOffset - EndOffset);
+        return TimeLineV2.TicksToMusicalTime(DurationTicks - StartMarker - EndMarker);
     }
 
     /// <summary>
@@ -160,7 +167,7 @@ public abstract class Clip
     /// <returns></returns>
     public double GetDurationInSeconds()
     {
-        return TimeLineV2.TicksToSeconds(DurationTicks - StartOffset - EndOffset);
+        return TimeLineV2.TicksToSeconds(DurationTicks - StartMarker - EndMarker);
     }
 
     /// <summary>
@@ -290,8 +297,8 @@ public abstract class Clip
         ImGui.PushStyleColor(ImGuiCol.Border, Color);
         if (ImGui.BeginChild(Id, new(ClipWidth, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar))
         {
-            var startOffBBT = TimeLineV2.TicksToMusicalTime(StartOffset);
-            var endOffBBT = TimeLineV2.TicksToMusicalTime(EndOffset);
+            var startOffBBT = TimeLineV2.TicksToMusicalTime(StartMarker);
+            var endOffBBT = TimeLineV2.TicksToMusicalTime(EndMarker);
             UiElement.Tooltip($"Start: {StartMusicalTime.Bars}:{StartMusicalTime.Beats}:{StartMusicalTime.Ticks}\n" +
                 $"End: {StartMusicalTime.Bars + DurationMusicalTime.Bars}:{StartMusicalTime.Beats + DurationMusicalTime.Beats}:{StartMusicalTime.Ticks + DurationMusicalTime.Ticks}\n" +
                 $"Length: {DurationMusicalTime.Bars}:{DurationMusicalTime.Beats}:{DurationMusicalTime.Ticks}\n" +
