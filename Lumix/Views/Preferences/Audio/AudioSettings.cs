@@ -49,6 +49,7 @@ public static class AudioSettings
         {
             var deviceEnumerator = new MMDeviceEnumerator();
             var devices = deviceEnumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+            WasapiDevices.Clear();
             foreach (MMDevice device in devices)
             {
                 WasapiDevices.Add(device.FriendlyName, device);
