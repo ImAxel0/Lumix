@@ -32,7 +32,7 @@ public static class AudioSettings
     {
         OutputDevice?.Dispose();
 
-#if LOCAL_DEVT
+#if LOCAL_DEV
         var asio = new AsioOut("M-Audio AIR 192 4 ASIO");
         OutputDevice = asio;
         AudioDriver = AudioDriver.Asio;
