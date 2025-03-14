@@ -11,7 +11,7 @@
 
 > **Source is provided as is. If compiling it, expect crashes, unfinished and partially working features. For latest source commits see the [Development](https://github.com/ImAxel0/Lumix/tree/Development) branch**
 
-> **Project must be compiled either as x86/x64. If compiling in debug mode, remove LOCAL_DEV constant define inside .csproj file**
+> **Project must be compiled either as x86/x64 and NET6 SDK is required. If compiling in debug mode, remove LOCAL_DEV constant define inside .csproj file.**
 
 ---
 
