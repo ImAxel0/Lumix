@@ -91,6 +91,13 @@ public static class PreferencesView
                     ImGui.Spacing();
                     ImGui.Spacing();
                     ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
+                    ImGui.Spacing();
                     ImGui.Text("Wasapi Latency");
                 }
                 break;  
@@ -159,31 +166,6 @@ public static class PreferencesView
             ImGui.EndCombo();
         }
 
-        /*
-        if (AudioSettings.AudioDriver == AudioDriver.Asio)
-        {
-            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if (ImGui.BeginCombo("##audio_device_combo", AudioSettings.DeviceName, ImGuiComboFlags.HeightLarge))
-            {
-                switch (AudioSettings.AudioDriver)
-                {
-                    case AudioDriver.Asio:
-                        {
-                            foreach (var device in AsioOut.GetDriverNames())
-                            {
-                                if (ImGui.Selectable(device))
-                                {
-                                    var asio = new AsioOut(device);
-                                    AudioSettings.UpdateAudioOutput(asio, asio.DriverName);
-                                }
-                            }
-                        }
-                        break;
-                }
-                ImGui.EndCombo();
-            }
-        }
-        */
         ImGui.Spacing();
         UiElement.Button("Input Config", new(150, 25));
         ImGui.SameLine();
