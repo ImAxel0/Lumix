@@ -74,10 +74,10 @@ public static class VirtualKeyboard
 
         if (ev.Key == Key.Space)
         {
-            if (TimeLineV2.IsPlaying())
-                TimeLineV2.StopPlayback();
+            if (TimeLine.IsPlaying())
+                TimeLine.StopPlayback();
             else
-                TimeLineV2.StartPlayback();
+                TimeLine.StartPlayback();
         }
 
         if (!_enabled)

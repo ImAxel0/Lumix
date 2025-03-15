@@ -13,7 +13,6 @@ using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.Views.Arrangement;
 using Lumix.ImGuiExtensions;
-using static Vanara.PInvoke.User32;
 
 namespace Lumix.Tracks;
 
@@ -106,16 +105,16 @@ public abstract class Track
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && TrackHasCursor && !Clips.Any(clip => clip.MenuBarIsHovered)
             && !ImGui.IsKeyDown(ImGuiKey.ModCtrl) && !ImGui.IsKeyDown(ImGuiKey.ModAlt))
         {
-            TimeSelectionArea.SetStart(TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true));
+            TimeSelectionArea.SetStart(TimeLine.TicksToMusicalTime(TimeLine.SnapToGrid(TimeLine.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true));
             TimeSelectionArea.SetEnd(TimeSelectionArea.Start);
-            _lastTickSelection = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
+            _lastTickSelection = TimeLine.SnapToGrid(TimeLine.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X));
             IsAreaSelectionMode = true;
         }
         else if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) && TrackHasCursor && IsAreaSelectionMode)
         {
             // Update selection area
-            var time = TimeLineV2.TicksToMusicalTime(TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
-            var timelineTickStart = TimeLineV2.TicksToMusicalTime(_lastTickSelection, true);
+            var time = TimeLine.TicksToMusicalTime(TimeLine.SnapToGrid(TimeLine.PositionToTime(ImGui.GetMousePos().X + ArrangementView.ArrangementScroolX - ArrangementView.WindowPos.X)), true);
+            var timelineTickStart = TimeLine.TicksToMusicalTime(_lastTickSelection, true);
             if (time == timelineTickStart)
             {
                 TimeSelectionArea.SetStart(timelineTickStart);
@@ -133,7 +132,7 @@ public abstract class Track
             MusicalTime selectionLength = TimeSelectionArea.Length;
             UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.Start.Bars}.{TimeSelectionArea.Start.Beats}.{TimeSelectionArea.Start.Ticks}\n" +
                 $"End: {TimeSelectionArea.End.Bars}.{TimeSelectionArea.End.Beats}.{TimeSelectionArea.End.Ticks}\n" +
-                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLineV2.TicksToSeconds(TimeLineV2.MusicalTimeToTicks(selectionLength)):n1}s)");
+                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLine.TicksToSeconds(TimeLine.MusicalTimeToTicks(selectionLength)):n1}s)");
         }
         else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
         {
@@ -150,8 +149,8 @@ public abstract class Track
 
         // Draw selection area
         float arrangementStart = ArrangementView.WindowPos.X - ArrangementView.ArrangementScroolX;
-        Vector2 selectionAreaStart = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.Start, true)), ImGui.GetWindowPos().Y);
-        Vector2 selectionAreaEnd = new(arrangementStart + TimeLineV2.TimeToPosition(TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
+        Vector2 selectionAreaStart = new(arrangementStart + TimeLine.TimeToPosition(TimeLine.MusicalTimeToTicks(TimeSelectionArea.Start, true)), ImGui.GetWindowPos().Y);
+        Vector2 selectionAreaEnd = new(arrangementStart + TimeLine.TimeToPosition(TimeLine.MusicalTimeToTicks(TimeSelectionArea.End, true)), ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y);
         ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(ImGuiTheme.SelectionCol));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
@@ -254,7 +253,7 @@ public abstract class Track
                     {
                         if (Path.GetExtension(SidebarView.DraggedFilePath) != ".mid")
                         {
-                            _tmpClip ??= new AudioClip(this as AudioTrack, new AudioClipData(SidebarView.DraggedFilePath), TimeLineV2.PositionToTime(ImGui.GetMousePos().X - windowPosX));
+                            _tmpClip ??= new AudioClip(this as AudioTrack, new AudioClipData(SidebarView.DraggedFilePath), TimeLine.PositionToTime(ImGui.GetMousePos().X - windowPosX));
                             allowed = true;
                         }
                         else
@@ -267,7 +266,7 @@ public abstract class Track
                     {
                         if (Path.GetExtension(SidebarView.DraggedFilePath) == ".mid")
                         {
-                            _tmpClip ??= new MidiClip(this as MidiTrack, SidebarView.DraggedFilePath, TimeLineV2.PositionToTime(ImGui.GetMousePos().X - windowPosX));
+                            _tmpClip ??= new MidiClip(this as MidiTrack, SidebarView.DraggedFilePath, TimeLine.PositionToTime(ImGui.GetMousePos().X - windowPosX));
                             allowed = true;
                         }
                         else
@@ -277,39 +276,14 @@ public abstract class Track
                         }
                     }
 
-                    long newTime = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(ImGui.GetMousePos().X - windowPosX));
+                    long newTime = TimeLine.SnapToGrid(TimeLine.PositionToTime(ImGui.GetMousePos().X - windowPosX));
                     _tmpClip?.SetStartTick(newTime);
                     _tmpClip?.Render();
-
-                    /*
-                    float newClipPos = (ImGui.GetMousePos().X - windowPosX) / ArrangementView.Zoom;
-                    float snappedPosition = AdaptiveGrid.GetSnappedPosition(newClipPos);
-                    _tmpClip?.ChangePos(Math.Clamp(snappedPosition, 0, float.PositiveInfinity));
-                    _tmpClip?.Render();
-                    */
-                    /*
-                    float newClipPos = ImGui.GetMousePos().X - windowPosX;
-                    newClipPos /= ArrangementView.Zoom;
-                    float stepLength = 120 * ArrangementView.BeatsPerBar * 2;
-                    float snappedPosition = MathF.Round(newClipPos / stepLength) * stepLength;
-                    _tmpClip?.ChangePos(Math.Clamp(snappedPosition, 0, float.PositiveInfinity));
-                    _tmpClip?.Render();
-                    */
 
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && allowed)
                     {
                         // Add the dragged clip to this track
                         Clip clip = _tmpClip;
-                        /*
-                        if (TrackType == TrackType.Audio)
-                        {
-                            clip = new AudioClip(this as AudioTrack, new AudioClipData(Sidebar.DraggedFilePath), snappedPosition);
-                        }
-                        else if (TrackType == TrackType.Midi)
-                        {
-                            clip = new MidiClip(this as MidiTrack, Sidebar.DraggedFilePath, snappedPosition);
-                        }
-                        */
                         Clips.Add(clip);
                         SidebarView.DraggedFilePath = string.Empty; // Reset dragging state
 
@@ -333,53 +307,9 @@ public abstract class Track
             }
         }
         ImGui.SetCursorPos(pos);
-        /*
-        uint gridColorSecondary = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.3f)); // Minor grid lines
 
-        Vector2 position = ImGui.GetWindowPos();
-        float startX = position.X;
-        float endX = startX + ArrangementView.MaxClipLength;
-
-        float spacing = AdaptiveGrid.CalculateGridSpacing(ArrangementView.Zoom, AdaptiveGrid.MinSpacing, AdaptiveGrid.MaxSpacing);
-
-        float currentTime = 0f; // Starting time in beats (or seconds, as desired)
-        float currentPosition = startX;
-        
-        while (currentPosition <= endX)
-        {
-            // Draw the grid line
-            ImGui.GetWindowDrawList().AddLine(new Vector2(currentPosition, position.Y), new Vector2(currentPosition, position.Y + 125), gridColorSecondary, 1);
-
-            // Increment position and time
-            currentPosition += spacing;
-            currentTime += spacing / AdaptiveGrid.BaseSpacing; // Convert spacing to beat time
-        }
-        */
         RenderGridLines(ArrangementView.ArrangementWidth, 125);
 
-        /*
-        uint gridColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.5f));
-        float gridThickness = 1.0f;
-        Vector2 position = ImGui.GetWindowPos();
-        float startX = position.X;
-        float endX = startX + Length;
-        float seconds = 0f;
-        for (float x = startX; x <= endX; x += 120 * ArrangementView.Zoom * ArrangementView.BeatsPerBar)
-        {
-            if (seconds == 9)
-                seconds = -1;
-
-            if (seconds % 2 != 0)
-            {
-                seconds++;
-                continue;
-            }
-            var textSize = ImGui.CalcTextSize(seconds.ToString()).X;
-            //ImGui.GetWindowDrawList().AddText(new Vector2(x - (textSize / 3), position.Y), ImGui.GetColorU32(Vector4.One), $"{seconds}");
-            ImGui.GetWindowDrawList().AddLine(new Vector2(x, position.Y), new Vector2(x, position.Y + 125), gridColor, gridThickness);
-            seconds += 1;
-        }
-        */
         // Track clips rendering
         foreach (var clip in Clips.ToList()) // try not to make a copy list here
         {
@@ -401,7 +331,7 @@ public abstract class Track
             // TODO: if multiple clips are selected all but first have wrong start time
             bool hasTimeSelection = TimeSelectionArea.HasArea();
             long newClipTime = hasTimeSelection ?
-                TimeLineV2.MusicalTimeToTicks(TimeSelectionArea.End, true)
+                TimeLine.MusicalTimeToTicks(TimeSelectionArea.End, true)
                 : duplicated.StartTick + duplicated.DurationTicks;
 
             // If an area is selected, shift it by its length
@@ -441,13 +371,13 @@ public abstract class Track
         if (this == DevicesView.SelectedTrack)
         {
             float xOffset; 
-            if (!TimeLineV2.IsPlaying())
+            if (!TimeLine.IsPlaying())
             {
-                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
+                xOffset = ArrangementView.WindowPos.X + TimeLine.TimeToPosition(TimeLine.GetCurrentTick()) - ArrangementView.ArrangementScroolX;
             }
             else
             {
-                xOffset = ArrangementView.WindowPos.X + TimeLineV2.TimeToPosition(TimeLineV2.GetLastTickStart()) - ArrangementView.ArrangementScroolX;
+                xOffset = ArrangementView.WindowPos.X + TimeLine.TimeToPosition(TimeLine.GetLastTickStart()) - ArrangementView.ArrangementScroolX;
             }
             ImGui.GetWindowDrawList().AddLine(new Vector2(xOffset, ImGui.GetWindowPos().Y),
                 new Vector2(xOffset, ImGui.GetWindowPos().Y + ImGui.GetWindowSize().Y),
@@ -457,12 +387,12 @@ public abstract class Track
 
     private void RenderGridLines(float viewportWidth, float trackHeight)
     {
-        long startTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX);
-        long endTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX + viewportWidth);
+        long startTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX);
+        long endTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX + viewportWidth);
 
-        float pixelsPerTick = TimeLineV2.PixelsPerTick;
-        long beatSpacing = TimeLineV2.PPQ;
-        long barSpacing = (long)(beatSpacing * TimeLineV2.BeatsPerBar);
+        float pixelsPerTick = TimeLine.PixelsPerTick;
+        long beatSpacing = TimeLine.PPQ;
+        long barSpacing = (long)(beatSpacing * TimeLine.BeatsPerBar);
 
         long gridSpacing = barSpacing;
         //if (pixelsPerTick > 0.5f) gridSpacing = beatSpacing; // Zoomed in: Draw every beat
@@ -470,7 +400,7 @@ public abstract class Track
 
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
         {
-            float xPosition = TimeLineV2.TimeToPosition(tick) - ArrangementView.ArrangementScroolX;
+            float xPosition = TimeLine.TimeToPosition(tick) - ArrangementView.ArrangementScroolX;
 
             if (tick % barSpacing == 0)
                 DrawGridLine(ArrangementView.WindowPos.X + xPosition, new Vector4(0f, 0f, 0f, 0.3f), thickness: 1); // Bar line

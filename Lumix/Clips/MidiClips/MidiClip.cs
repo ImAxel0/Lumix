@@ -53,7 +53,7 @@ public class MidiClip : Clip
         Color = parent.Color;
         _midiClipData = new MidiClipData(time);
         _pianoRollEditor = new PianoRoll(this, Track as MidiTrack);
-        StartTick = TimeLineV2.MusicalTimeToTicks(time.Start, true);
+        StartTick = TimeLine.MusicalTimeToTicks(time.Start, true);
     }
 
     public void UpdateClipData(MidiClipData newdata)
@@ -63,14 +63,12 @@ public class MidiClip : Clip
 
     protected override long GetClipDuration()
     {
-        return TimeLineV2.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, false);
-        //return (float)_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds;
+        return TimeLine.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, false);
     }
 
     protected override float GetClipWidth()
     {
-        return TimeLineV2.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, false) * TimeLineV2.PixelsPerTick;
-        return (float)(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds * 120f /** TopBarControls.Bpm*/ * ArrangementView.Zoom);
+        return TimeLine.SecondsToTicks(_midiClipData.MidiFile.GetDuration<MetricTimeSpan>().TotalSeconds, false) * TimeLine.PixelsPerTick;
     }
 
     protected override void RenderClipContent(float menuBarHeight, float clipHeight)

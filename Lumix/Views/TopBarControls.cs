@@ -89,26 +89,22 @@ public class TopBarControls
                     "[Z]/[X] Adjust octave range\n" +
                     "[C]/[V] Adjust velocity");
 
-                //ImGui.SameLine();
-                //float time = TimeLine.CurrentTime / Bpm;
-                //ImGui.TextDisabled($"Time: {time:n1}");
-
                 ImGui.SameLine();
 
                 ImGui.BeginChild("ticks", Vector2.Zero, ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY | ImGuiChildFlags.FrameStyle);
-                ImGui.TextDisabled($"Ticks: {TimeLineV2.GetCurrentTick()}");
+                ImGui.TextDisabled($"Ticks: {TimeLine.GetCurrentTick()}");
                 ImGui.EndChild();
 
                 ImGui.SameLine();
 
                 ImGui.BeginChild("sec", Vector2.Zero, ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY | ImGuiChildFlags.FrameStyle);
-                ImGui.TextDisabled($"{TimeLineV2.TicksToSeconds(TimeLineV2.GetCurrentTick()):n1}s");
+                ImGui.TextDisabled($"{TimeLine.TicksToSeconds(TimeLine.GetCurrentTick()):n1}s");
                 ImGui.EndChild();
 
                 ImGui.SameLine();
 
                 ImGui.BeginChild("bar_beat_tick", Vector2.Zero, ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY | ImGuiChildFlags.FrameStyle);
-                var beatsBarTicks = TimeLineV2.TicksToMusicalTime(TimeLineV2.GetCurrentTick(), true);
+                var beatsBarTicks = TimeLine.TicksToMusicalTime(TimeLine.GetCurrentTick(), true);
                 ImGui.TextDisabled($"{beatsBarTicks.Bars}:{beatsBarTicks.Beats}:{beatsBarTicks.Ticks}");
                 ImGui.EndChild();
                 //ImGui.EndChild();
@@ -124,13 +120,13 @@ public class TopBarControls
                 ImGui.PushStyleColor(ImGuiCol.ButtonActive, Vector4.Zero);
                 if (ImGui.Button($"{FontAwesome6.Play}"))
                 {
-                    TimeLineV2.StartPlayback();
+                    TimeLine.StartPlayback();
                 }
                 InfoBox.SetInfoData("Play button", "Start playback.");
                 ImGui.SameLine();
                 if (ImGui.Button($"{FontAwesome6.Stop}"))
                 {
-                    TimeLineV2.StopPlayback(true);
+                    TimeLine.StopPlayback(true);
                 }
                 InfoBox.SetInfoData("Play button", "Stop playback.");
                 ImGui.SameLine();

@@ -1,6 +1,5 @@
 ﻿using Lumix.Plugins;
 using Lumix.SampleProviders;
-using Lumix.Tracks.AudioTracks;
 using Melanchall.DryWetMidi.Core;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;

@@ -5,7 +5,6 @@ using Melanchall.DryWetMidi.Core;
 using Lumix.Clips.AudioClips;
 using Lumix.SampleProviders;
 using Vanara.PInvoke;
-using Lumix.Views.Arrangement;
 
 namespace Lumix.Tracks.AudioTracks;
 

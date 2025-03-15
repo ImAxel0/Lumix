@@ -52,12 +52,8 @@ public class MidiTrack : Track
             // Adjust the mouse position based on the scroll offset
             float adjustedMousePosX = mousePosX + ArrangementView.ArrangementScroolX;
 
-            var newTime = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(adjustedMousePosX));
+            var newTime = TimeLine.SnapToGrid(TimeLine.PositionToTime(adjustedMousePosX));
 
-            // Convert the mouse position in pixels to time, considering the zoom factor
-            //float newTime = adjustedMousePosX / ArrangementView.Zoom;
-            //float stepLength = /*TopBarControls.Bpm **/ 120 * ArrangementView.BeatsPerBar * 2;
-            //float snappedPosition = MathF.Round(newTime / stepLength) * stepLength;
             CreateMidiClip(newTime);
         }
     }

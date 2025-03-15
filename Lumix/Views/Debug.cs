@@ -28,8 +28,8 @@ public static class Debug
                                 var clip = track.Clips[j];
                                 if (ImGui.TreeNodeEx($"{Path.GetFileName(clip.Name)}"))
                                 {
-                                    ImGui.Text($"Pos: {TimeLineV2.TimeToPosition(clip.StartTick)}");
-                                    ImGui.Text($"Sec: {TimeLineV2.TicksToSeconds(clip.StartTick)}");
+                                    ImGui.Text($"Pos: {TimeLine.TimeToPosition(clip.StartTick)}");
+                                    ImGui.Text($"Sec: {TimeLine.TicksToSeconds(clip.StartTick)}");
                                     ImGui.TreePop();
                                 }
                             }

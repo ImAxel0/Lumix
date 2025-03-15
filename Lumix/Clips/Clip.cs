@@ -138,7 +138,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetStartTimeInMusicalTime()
     {
-        return TimeLineV2.TicksToMusicalTime(StartTick + StartMarker, true);
+        return TimeLine.TicksToMusicalTime(StartTick + StartMarker, true);
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetDurationInMusicalTime()
     {
-        return TimeLineV2.TicksToMusicalTime(DurationTicks - StartMarker - EndMarker);
+        return TimeLine.TicksToMusicalTime(DurationTicks - StartMarker - EndMarker);
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public abstract class Clip
     /// <returns></returns>
     public double GetDurationInSeconds()
     {
-        return TimeLineV2.TicksToSeconds(DurationTicks - StartMarker - EndMarker);
+        return TimeLine.TicksToSeconds(DurationTicks - StartMarker - EndMarker);
     }
 
     /// <summary>
@@ -283,7 +283,7 @@ public abstract class Clip
 
         Vector2 mousePos = ImGui.GetMousePos();
 
-        ImGui.SetCursorPosX(TimeLineV2.TimeToPosition(StartTick));
+        ImGui.SetCursorPosX(TimeLine.TimeToPosition(StartTick));
         ImGui.SetCursorPosY(Track.TrackTopPos);
 
         bool selected = ArrangementView.SelectedClips.Contains(this);
@@ -325,100 +325,8 @@ public abstract class Clip
             MenuBarIsHovered = isHoveringMenuBar;
             bool isClicked = isHoveringMenuBar && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
-            // Is hovering top-left corner
+            // Is hovering top-left corner (not implemented yet)
             bool resizeHovered = false;
-            /*
-            float resizeGrabStart = clipStart.X + StartOffset * TopBarControls.Bpm * ArrangementView.Zoom;
-            if (ImGui.IsMouseHoveringRect(new Vector2(resizeGrabStart, clipStart.Y), new Vector2(resizeGrabStart + 15, clipStart.Y + menuBarHeight)) 
-                && Track.DraggedClip == null || _isLeftResizing)
-            {
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left, false))
-                {
-                    _resizeMouseStartX = ImGui.GetMousePos().X - ArrangementView.WindowPos.X;
-                    _isLeftResizing = true;
-                }
-
-                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
-                    _isLeftResizing = false;
-
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                {
-                    float gridSpacingWidth = AdaptiveGrid.CalculateGridSpacing(ArrangementView.Zoom, AdaptiveGrid.MinSpacing, AdaptiveGrid.MaxSpacing);
-                    float gridSpacingTime = gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm;
-
-                    if (mousePos.X - ArrangementView.WindowPos.X > _resizeMouseStartX + (gridSpacingWidth / 2))
-                    {
-                        StartOffset = Math.Clamp(StartOffset + gridSpacingTime, 0, GetClipDuration() - EndOffset - gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm);
-                        if (StartOffset > 0)
-                        {
-                            _resizeMouseStartX += gridSpacingWidth;
-                        }
-                        else
-                            _resizeMouseStartX = clipStart.X - ArrangementView.WindowPos.X;
-                    }
-                    else if (mousePos.X - ArrangementView.WindowPos.X < _resizeMouseStartX - (gridSpacingWidth / 2))
-                    {
-                        StartOffset = Math.Clamp(StartOffset - gridSpacingTime, 0, GetClipDuration() - EndOffset - gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm);
-                        if (StartOffset > 0)
-                        {
-                            _resizeMouseStartX -= gridSpacingWidth;
-                        }
-                        else
-                            _resizeMouseStartX = clipStart.X - ArrangementView.WindowPos.X; ;
-                    }
-                }
-                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-                resizeHovered = true;
-            }
-            //ImGui.GetForegroundDrawList().AddRectFilled(new Vector2(resizeGrabStart, clipStart.Y), new Vector2(resizeGrabStart + 15, clipStart.Y + menuBarHeight)
-            //, ImGui.GetColorU32(Vector4.One));
-
-            // Is hovering top-right corner
-            float resizeGrabEnd = EndOffset * TopBarControls.Bpm * ArrangementView.Zoom;
-            if (ImGui.IsMouseHoveringRect(new Vector2(clipStart.X + clipSize.X - 15 - resizeGrabEnd, clipStart.Y), new Vector2(clipStart.X + clipSize.X - resizeGrabEnd, clipStart.Y + menuBarHeight)) 
-                && Track.DraggedClip == null || _isRightResizing)
-            {
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left, false))
-                {
-                    _resizeMouseStartX = ImGui.GetMousePos().X - ArrangementView.WindowPos.X;
-                    _isRightResizing = true;
-                }
-
-                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
-                    _isRightResizing = false;
-
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                {
-                    float gridSpacingWidth = AdaptiveGrid.CalculateGridSpacing(ArrangementView.Zoom, AdaptiveGrid.MinSpacing, AdaptiveGrid.MaxSpacing);
-                    float gridSpacingTime = gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm;
-
-                    if (mousePos.X - ArrangementView.WindowPos.X < _resizeMouseStartX - (gridSpacingWidth / 2))
-                    {
-                        EndOffset = Math.Clamp(EndOffset + gridSpacingTime, 0, GetClipDuration() - StartOffset - gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm);
-                        if (EndOffset > 0)
-                        {
-                            _resizeMouseStartX -= gridSpacingWidth;
-                        }
-                        else
-                            _resizeMouseStartX = clipStart.X + clipSize.X - ArrangementView.WindowPos.X;
-                    }
-                    else if (mousePos.X - ArrangementView.WindowPos.X > _resizeMouseStartX + (gridSpacingWidth / 2))
-                    {
-                        EndOffset = Math.Clamp(EndOffset - gridSpacingTime, 0, GetClipDuration() - StartOffset - gridSpacingWidth / ArrangementView.Zoom / TopBarControls.Bpm);
-                        if (EndOffset > 0)
-                        {
-                            _resizeMouseStartX += gridSpacingWidth;
-                        }
-                        else
-                            _resizeMouseStartX = clipStart.X + clipSize.X - ArrangementView.WindowPos.X; ;
-                    }
-                }
-                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-                resizeHovered = true;
-            }
-            //ImGui.GetForegroundDrawList().AddRectFilled(new Vector2(clipStart.X + clipSize.X - 15 - resizeGrabEnd, clipStart.Y), new Vector2(clipStart.X + clipSize.X - resizeGrabEnd, clipStart.Y + menuBarHeight)
-                //, ImGui.GetColorU32(Vector4.One));
-            */
 
             if (isHoveringMenuBar && (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right)))
             {
@@ -507,27 +415,15 @@ public abstract class Clip
             if (isClicked && Track.DraggedClip == null && !wasDoubleClicked && !resizeHovered && !_isLeftResizing && !_isRightResizing)
             {
                 Track.SetDraggedClip(this);
-                Track.SetDragStartOffset(mousePos.X - TimeLineV2.TimeToPosition(StartTick) - ArrangementView.WindowPos.X);
+                Track.SetDragStartOffset(mousePos.X - TimeLine.TimeToPosition(StartTick) - ArrangementView.WindowPos.X);
                 //Track.SetDragStartOffset(mousePos.X - TimeLinePosition * ArrangementView.Zoom - ArrangementView.WindowPos.X);
             }
 
             // If dragging, update the clip's position
             if (Track.DraggedClip == this && ImGui.IsMouseDragging(ImGuiMouseButton.Left))
             {
-                long newTime = TimeLineV2.SnapToGrid(TimeLineV2.PositionToTime(mousePos.X - ArrangementView.WindowPos.X - Track.DragStartOffsetX));
-                //long newTime = (TimeLineV2.PositionToTime((mousePos.X - ArrangementView.WindowPos.X - Track.DragStartOffsetX) / gridSpacing) * gridSpacing);
+                long newTime = TimeLine.SnapToGrid(TimeLine.PositionToTime(mousePos.X - ArrangementView.WindowPos.X - Track.DragStartOffsetX));
                 StartTick = Math.Clamp(newTime, 0, long.MaxValue);
-
-                //float newPos = (ImGui.GetMousePos().X - ArrangementView.WindowPos.X - Track.DragStartOffsetX) / ArrangementView.Zoom;
-                //float snappedPosition = AdaptiveGrid.GetSnappedPosition(newPos);
-                //TimeLinePosition = Math.Clamp(snappedPosition, 0, float.PositiveInfinity);
-                /*
-                float newPos = ImGui.GetMousePos().X - ArrangementView.WindowPos.X - Track.DragStartOffsetX;
-                newPos /= ArrangementView.Zoom;
-                float stepLength = 120 * ArrangementView.BeatsPerBar * 2;
-                float snappedPosition = MathF.Round(newPos / stepLength) * stepLength;
-                TimeLinePosition = Math.Clamp(snappedPosition, 0, float.PositiveInfinity);
-                */
             }
 
             // Request clip copy
@@ -569,7 +465,7 @@ public abstract class Clip
         {
             DeleteRequested = true;
         }
-        if (ImGui.MenuItem("Split", "Ctrl+E", false, !TimeLine.IsRunning))
+        if (ImGui.MenuItem("Split", "Ctrl+E", false, !TimeLine.IsPlaying()))
         {
 
         }

@@ -1,9 +1,6 @@
-﻿using Lumix.Views.Arrangement;
-using Lumix.Views.Midi;
-using Melanchall.DryWetMidi.Common;
+﻿using Lumix.Views.Midi;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
-using NAudio.Midi;
 using MidiFile = Melanchall.DryWetMidi.Core.MidiFile;
 
 namespace Lumix.Clips.MidiClips;

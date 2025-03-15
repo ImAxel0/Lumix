@@ -2,7 +2,6 @@
 using ImGuiNET;
 using Lumix.Clips.MidiClips;
 using Lumix.ImGuiExtensions;
-using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Tools;
 using System.Numerics;
 

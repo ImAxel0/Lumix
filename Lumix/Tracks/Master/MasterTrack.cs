@@ -102,12 +102,12 @@ public class MasterTrack
 
     private void RenderGridLines(float viewportWidth, float trackHeight)
     {
-        long startTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX);
-        long endTick = TimeLineV2.PositionToTime(ArrangementView.ArrangementScroolX + viewportWidth);
+        long startTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX);
+        long endTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX + viewportWidth);
 
-        float pixelsPerTick = TimeLineV2.PixelsPerTick;
-        long beatSpacing = TimeLineV2.PPQ;
-        long barSpacing = (long)(beatSpacing * TimeLineV2.BeatsPerBar);
+        float pixelsPerTick = TimeLine.PixelsPerTick;
+        long beatSpacing = TimeLine.PPQ;
+        long barSpacing = (long)(beatSpacing * TimeLine.BeatsPerBar);
 
         long gridSpacing = barSpacing;
         //if (pixelsPerTick > 0.5f) gridSpacing = beatSpacing; // Zoomed in: Draw every beat
@@ -115,7 +115,7 @@ public class MasterTrack
 
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
         {
-            float xPosition = TimeLineV2.TimeToPosition(tick) - ArrangementView.ArrangementScroolX;
+            float xPosition = TimeLine.TimeToPosition(tick) - ArrangementView.ArrangementScroolX;
 
             if (tick % barSpacing == 0)
                 DrawGridLine(ArrangementView.WindowPos.X + xPosition, new Vector4(0f, 0f, 0f, 0.3f), thickness: 1); // Bar line

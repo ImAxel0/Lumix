@@ -10,7 +10,6 @@ using Lumix.Clips.Renderers;
 using Lumix.ImGuiExtensions;
 using Lumix.Views.Preferences.AudioFolders;
 using Lumix.FileDialogs;
-using Lumix.Views.Preferences.Plugins;
 
 namespace Lumix.Views.Sidebar;
 

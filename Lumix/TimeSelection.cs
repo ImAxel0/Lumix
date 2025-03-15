@@ -1,9 +1,4 @@
 ﻿using Lumix.Views.Arrangement;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lumix;
 
@@ -22,7 +17,7 @@ public class TimeSelection
     public bool HasArea() => Start != End;
     public void Reset()
     {
-        Start = TimeLineV2.TicksToMusicalTime(TimeLineV2.GetLastTickStart(), true);
-        End = TimeLineV2.TicksToMusicalTime(TimeLineV2.GetLastTickStart(), true);
+        Start = TimeLine.TicksToMusicalTime(TimeLine.GetLastTickStart(), true);
+        End = TimeLine.TicksToMusicalTime(TimeLine.GetLastTickStart(), true);
     }
 }

@@ -402,7 +402,7 @@ public class PianoRoll
         long startTick = PositionToTime(_scrollX);
         long endTick = PositionToTime(_scrollX + _windowSize.X - KeyWidth);
 
-        long beatSpacing = TimeLineV2.PPQ;
+        long beatSpacing = TimeLine.PPQ;
         long barSpacing = (long)(beatSpacing * _beatsPerBar);
 
         float pixelsPerTick = _pixelsPerTick;
@@ -444,7 +444,7 @@ public class PianoRoll
         for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
         {
             float xPosition = TimeToPosition(tick) - _scrollX + _windowPos.X + KeyWidth;
-            var musicalTime = TimeLineV2.TicksToMusicalTime(tick, true);
+            var musicalTime = TimeLine.TicksToMusicalTime(tick, true);
             xPosition -= ImGui.CalcTextSize($"{musicalTime.Bars}.{musicalTime.Beats}").X / 2;
 
             if (tick % barSpacing == 0 && xPosition > _windowPos.X + KeyWidth)
@@ -476,15 +476,15 @@ public class PianoRoll
 
     public long SnapToGrid(long tick)
     {
-        long gridSpacing = (long)(TimeLineV2.PPQ * _beatsPerBar);
+        long gridSpacing = (long)(TimeLine.PPQ * _beatsPerBar);
         return (long)Math.Round((double)tick / gridSpacing) * gridSpacing;
     }
 
     /// <returns>How many ticks are in one bar</returns>
     private long GetTicksInBar()
     {
-        long barTicks = (long)(TimeLineV2.PPQ * _beatsPerBar);
-        double barSeconds = TimeLineV2.TicksToSeconds(barTicks, false);
+        long barTicks = (long)(TimeLine.PPQ * _beatsPerBar);
+        double barSeconds = TimeLine.TicksToSeconds(barTicks, false);
         long realBarTicks = TimeConverter.ConvertFrom(new MetricTimeSpan(TimeSpan.FromSeconds(barSeconds)), _midiClip.MidiClipData.TempoMap);
         return realBarTicks;
     }
@@ -509,8 +509,8 @@ public class PianoRoll
             int row = NoteNumberToRow(note.Data.NoteNumber);
             float noteStartTime = (float)note.Data.TimeAs<MetricTimeSpan>(_midiClip.MidiClipData.TempoMap).TotalSeconds;
             float noteDuration = (float)note.Data.LengthAs<MetricTimeSpan>(_midiClip.MidiClipData.TempoMap).TotalSeconds;
-            noteStartTime = TimeToPosition(TimeLineV2.SecondsToTicks(noteStartTime, false));
-            noteDuration = TimeToPosition(TimeLineV2.SecondsToTicks(noteDuration, false));
+            noteStartTime = TimeToPosition(TimeLine.SecondsToTicks(noteStartTime, false));
+            noteDuration = TimeToPosition(TimeLine.SecondsToTicks(noteDuration, false));
 
             Vector2 rectStart = _windowPos + new Vector2(KeyWidth + noteStartTime - _scrollX, row * _noteHeight * (_vZoom * 10) - _scrollY);
             Vector2 rectEnd = _windowPos + new Vector2(KeyWidth + noteStartTime + noteDuration - _scrollX, (row + 1) * _noteHeight * (_vZoom * 10) - _scrollY);
@@ -705,9 +705,9 @@ public class PianoRoll
 
     private void RenderTimeLine()
     {
-        float xOffset = _windowPos.X + TimeToPosition(TimeLineV2.GetCurrentTick()) - _scrollX + KeyWidth - TicksToPixels(_midiClip.StartTick);
+        float xOffset = _windowPos.X + TimeToPosition(TimeLine.GetCurrentTick()) - _scrollX + KeyWidth - TicksToPixels(_midiClip.StartTick);
         //float xOffset = _windowPos.X + TimeLine.CurrentTime * _zoom - _scrollX + KeyWidth;
-        if (TimeLineV2.GetCurrentTick() > 0 && xOffset > _windowPos.X + KeyWidth && xOffset < _windowPos.X + _windowSize.X && TimeLineV2.IsPlaying())
+        if (TimeLine.GetCurrentTick() > 0 && xOffset > _windowPos.X + KeyWidth && xOffset < _windowPos.X + _windowSize.X && TimeLine.IsPlaying())
             ImGui.GetWindowDrawList().AddLine(new(xOffset, _windowPos.Y), new(xOffset, _windowPos.Y + _windowSize.Y), ImGui.GetColorU32(new Vector4(1, 1, 1, 0.8f)));
 
         if (xOffset < _windowPos.X + _windowSize.X && xOffset > _windowPos.X + KeyWidth)
@@ -861,7 +861,7 @@ public class PianoRoll
             int row = (int)(localPos.Y / (_vZoom * 10) / _noteHeight);            
             float adjustedMousePosX = (int)localPos.X - KeyWidth;
             long tick = SnapToGrid(PositionToTime(adjustedMousePosX));
-            float seconds = (float)TimeLineV2.TicksToSeconds(tick, false);
+            float seconds = (float)TimeLine.TicksToSeconds(tick, false);
             long realTicks = TimeConverter.ConvertFrom(new MetricTimeSpan(TimeSpan.FromSeconds(seconds)), _midiClip.MidiClipData.TempoMap);
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && !_notesHovered.Any(n => n == true))
             {
@@ -1006,7 +1006,7 @@ public class PianoRoll
             _notesHovered.Clear();
         }
 
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !TimeLineV2.IsPlaying())
+        if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !TimeLine.IsPlaying())
         {
             var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
             vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
