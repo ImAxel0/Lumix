@@ -130,9 +130,10 @@ public abstract class Track
                 TimeSelectionArea.SetEnd(time);
             }
             MusicalTime selectionLength = TimeSelectionArea.Length;
-            UiElement.Tooltip($"Time Selection\nStart: {TimeSelectionArea.Start.Bars}.{TimeSelectionArea.Start.Beats}.{TimeSelectionArea.Start.Ticks}\n" +
+            InfoBox.SetInfoData("Time Selection", $"Start: {TimeSelectionArea.Start.Bars}.{TimeSelectionArea.Start.Beats}.{TimeSelectionArea.Start.Ticks}\n" +
                 $"End: {TimeSelectionArea.End.Bars}.{TimeSelectionArea.End.Beats}.{TimeSelectionArea.End.Ticks}\n" +
-                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks} (Duration: {TimeLine.TicksToSeconds(TimeLine.MusicalTimeToTicks(selectionLength)):n1}s)");
+                $"Length: {selectionLength.Bars}.{selectionLength.Beats}.{selectionLength.Ticks}\n" + 
+                $"Duration: {TimeLine.TicksToSeconds(TimeLine.MusicalTimeToTicks(selectionLength)):n1}s", true);
         }
         else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && IsAreaSelectionMode)
         {

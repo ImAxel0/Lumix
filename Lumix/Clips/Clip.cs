@@ -4,9 +4,11 @@ using Lumix.Clips.AudioClips;
 using Lumix.Clips.MidiClips;
 using Lumix.ImGuiExtensions;
 using Lumix.Tracks;
+using Lumix.Views;
 using Lumix.Views.Arrangement;
 using Lumix.Views.Sidebar;
 using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 using NAudio.Wave;
 using System.Numerics;
 
@@ -292,25 +294,7 @@ public abstract class Clip
         ImGui.PushStyleColor(ImGuiCol.MenuBarBg, Enabled ? Color : Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.Border, Color);
         if (ImGui.BeginChild(Id, new(ClipWidth, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar))
-        {
-            /*
-            var startOffBBT = TimeLineV2.TicksToMusicalTime(StartMarker);
-            var endOffBBT = TimeLineV2.TicksToMusicalTime(EndMarker);
-            UiElement.Tooltip($"Start: {StartMusicalTime.Bars}:{StartMusicalTime.Beats}:{StartMusicalTime.Ticks}\n" +
-                $"End: {StartMusicalTime.Bars + DurationMusicalTime.Bars}:{StartMusicalTime.Beats + DurationMusicalTime.Beats}:{StartMusicalTime.Ticks + DurationMusicalTime.Ticks}\n" +
-                $"Length: {DurationMusicalTime.Bars}:{DurationMusicalTime.Beats}:{DurationMusicalTime.Ticks}\n" +
-                $"Duration: {GetDurationInSeconds():n3}\n" +
-                $"Start ofs: {startOffBBT.Bars}:{startOffBBT.Beats}:{startOffBBT.Ticks}\n" +
-                $"End ofs: {endOffBBT.Bars}:{endOffBBT.Beats}:{endOffBBT.Ticks}");
-            */
-            var drawList = ImGui.GetWindowDrawList();
-            Vector2 clipStart = ImGui.GetWindowPos();
-            Vector2 clipEnd = ImGui.GetWindowPos() + ImGui.GetWindowSize();
-            Vector2 clipSize = ImGui.GetWindowSize();
-            uint trimmedColor = ImGui.GetColorU32(new Vector4(Color.X * 0.3f, Color.Y * 0.3f, Color.Z * 0.3f, 1));
-            //drawList.AddRectFilled(clipStart, new Vector2(clipStart.X + StartTicksOffset * TopBarControls.Bpm * ArrangementView.Zoom, clipEnd.Y), trimmedColor);
-            //drawList.AddRectFilled(new Vector2(clipEnd.X - EndTicksOffset * TopBarControls.Bpm * ArrangementView.Zoom, clipStart.Y), clipEnd, trimmedColor);
-
+        {           
             ClipIsHovered = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
             if (ImGui.BeginPopupContextWindow("clip_popup", ImGuiPopupFlags.MouseButtonRight))
             {
@@ -324,6 +308,13 @@ public abstract class Clip
             bool isHoveringMenuBar = ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + new Vector2(ClipWidth, menuBarHeight));//ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
             MenuBarIsHovered = isHoveringMenuBar;
             bool isClicked = isHoveringMenuBar && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+
+            // Show clip info in Info Box
+            InfoBox.SetInfoData(_name, $"Start: {StartMusicalTime.Bars}.{StartMusicalTime.Beats}.{StartMusicalTime.Ticks}\n" +
+                $"End: {StartMusicalTime.Bars + DurationMusicalTime.Bars}.{StartMusicalTime.Beats + DurationMusicalTime.Beats}.{StartMusicalTime.Ticks + DurationMusicalTime.Ticks}\n" +
+                $"Length: {DurationMusicalTime.Bars}.{DurationMusicalTime.Beats}.{DurationMusicalTime.Ticks}\n" +
+                $"Duration: {GetDurationInSeconds():n3}s\n",
+                isHoveringMenuBar || this.Track.DraggedClip == this);
 
             // Is hovering top-left corner (not implemented yet)
             bool resizeHovered = false;

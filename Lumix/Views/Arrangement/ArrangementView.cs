@@ -67,51 +67,6 @@ public static class ArrangementView
         }
     }
 
-    public static void ZoomChange(float value)
-    {
-        const float epsilon = 0.0001f;
-
-        // Calculate the mouse position within the arrangement view
-        float mousePosInWindowX = ImGui.GetMousePos().X - _windowPos.X;
-        float mousePosInContentX = mousePosInWindowX + _arrangementScrollX;
-        float t = _zoom <= 0.1f + epsilon && value < 0 || _zoom < 0.1f - epsilon && value > 0 ? 0.01f : 0.1f;
-
-        // Store the current zoom value
-        float _previousValue = _zoom;
-
-        // Update the zoom level
-        if (value > 0)
-        {
-            _zoom = Math.Clamp(_zoom + t, 0.05f, 2f);
-        }
-        else
-        {
-            _zoom = Math.Clamp(_zoom - t, 0.05f, 2f);
-        }
-
-        if (_previousValue != _zoom)
-        {
-            // Calculate the new scroll offset to keep the content under the mouse consistent          
-            float zoomFactor = _zoom / _previousValue;
-            ImGui.SetScrollX(Math.Clamp(mousePosInContentX * zoomFactor - mousePosInWindowX, 0, float.PositiveInfinity));
-
-            // Resize waveforms or other elements if necessary
-            Tracks.ToList().ForEach(track =>
-            {
-                if (track.TrackType == TrackType.Audio)
-                {
-                    track.Clips.ForEach(clip =>
-                    {
-                        if (clip is AudioClip audioClip)
-                        {
-                            audioClip.ResizeWaveformData();
-                        }
-                    });
-                }
-            });
-        }
-    }
-
     public static void Init()
     {
         for (int i = 0; i < 5; i++)
