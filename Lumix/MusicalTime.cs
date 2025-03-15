@@ -9,6 +9,15 @@ public struct MusicalTime
         this.Ticks = ticks;
     }
 
+    public string AsString(bool includeTicks = true)
+    {
+        if (!includeTicks)
+        {
+            return $"{Bars}.{Beats}";
+        }
+        return $"{Bars}.{Beats}.{Ticks}";
+    }
+
     public static MusicalTime operator +(MusicalTime a, MusicalTime b)
     {
         return new MusicalTime(a.Bars + b.Bars, a.Beats + b.Beats, a.Ticks + b.Ticks);

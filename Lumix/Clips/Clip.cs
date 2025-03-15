@@ -2,6 +2,7 @@
 using ImGuiNET;
 using Lumix.Clips.AudioClips;
 using Lumix.Clips.MidiClips;
+using Lumix.EventArguments;
 using Lumix.ImGuiExtensions;
 using Lumix.Tracks;
 using Lumix.Views;
@@ -74,15 +75,44 @@ public abstract class Clip
     /// </summary>
     public MusicalTime DurationMusicalTime { get; protected set; }
 
-    /// <summary>
-    /// Cutted portion in ticks from start of the clip
-    /// </summary>
-    public long StartMarker { get; protected set; }
+    // Backing fields for markers
+    private MusicalTime _startMarker;
+    private MusicalTime _endMarker;
 
     /// <summary>
-    /// Cutted portion in ticks from end of the clip
+    /// Marker at which clip will start playing
     /// </summary>
-    public long EndMarker { get; protected set; }
+    public MusicalTime StartMarker
+    {
+        get => _startMarker;
+        protected set
+        {
+            if (_startMarker != value)
+            {
+                StartMarkerChanged.Invoke(this, new EventArguments.TimeChangedEventArgs(_startMarker, value));
+                _startMarker = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Marker at which clip will stop playing
+    /// </summary>
+    public MusicalTime EndMarker
+    {
+        get => _endMarker;
+        protected set
+        {
+            if (_endMarker != value)
+            {
+                EndMarkerChanged.Invoke(this, new EventArguments.TimeChangedEventArgs(_endMarker, value));
+                _endMarker = value;
+            }
+        }
+    }
+
+    public event EventHandler<EventArguments.TimeChangedEventArgs> StartMarkerChanged;
+    public event EventHandler<EventArguments.TimeChangedEventArgs> EndMarkerChanged;
 
     #endregion
 
@@ -140,7 +170,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetStartTimeInMusicalTime()
     {
-        return TimeLine.TicksToMusicalTime(StartTick + StartMarker, true);
+        return  TimeLine.TicksToMusicalTime(StartTick + TimeLine.MusicalTimeToTicks(StartMarker), true);
     }
 
     /// <summary>
@@ -160,7 +190,7 @@ public abstract class Clip
     /// <returns></returns>
     public MusicalTime GetDurationInMusicalTime()
     {
-        return TimeLine.TicksToMusicalTime(DurationTicks - StartMarker - EndMarker);
+        return TimeLine.TicksToMusicalTime(DurationTicks - TimeLine.MusicalTimeToTicks(StartMarker - EndMarker));
     }
 
     /// <summary>
@@ -169,7 +199,7 @@ public abstract class Clip
     /// <returns></returns>
     public double GetDurationInSeconds()
     {
-        return TimeLine.TicksToSeconds(DurationTicks - StartMarker - EndMarker);
+        return TimeLine.TicksToSeconds(DurationTicks - TimeLine.MusicalTimeToTicks(StartMarker - EndMarker));
     }
 
     /// <summary>
@@ -310,10 +340,12 @@ public abstract class Clip
             bool isClicked = isHoveringMenuBar && ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
             // Show clip info in Info Box
-            InfoBox.SetInfoData(_name, $"Start: {StartMusicalTime.Bars}.{StartMusicalTime.Beats}.{StartMusicalTime.Ticks}\n" +
+            InfoBox.SetInfoData(_name, $"Start: {StartMusicalTime.AsString()}\n" +
                 $"End: {StartMusicalTime.Bars + DurationMusicalTime.Bars}.{StartMusicalTime.Beats + DurationMusicalTime.Beats}.{StartMusicalTime.Ticks + DurationMusicalTime.Ticks}\n" +
-                $"Length: {DurationMusicalTime.Bars}.{DurationMusicalTime.Beats}.{DurationMusicalTime.Ticks}\n" +
-                $"Duration: {GetDurationInSeconds():n3}s\n",
+                $"Length: {DurationMusicalTime.AsString()}\n" +
+                $"Duration: {GetDurationInSeconds():n3}s\n\n" +
+                $"Marker (Start): {StartMarker.AsString()}\n" +
+                $"Marker (End): {EndMarker.AsString()}",
                 isHoveringMenuBar || this.Track.DraggedClip == this);
 
             // Is hovering top-left corner (not implemented yet)

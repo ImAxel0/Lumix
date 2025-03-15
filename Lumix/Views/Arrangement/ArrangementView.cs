@@ -23,7 +23,7 @@ public static class ArrangementView
     public static float Zoom => _zoom;
     public static List<Clip> SelectedClips { get; set; } = new();
 
-    public static void NewZoomChange(float value)
+    public static void ZoomChange(float value)
     {
         // Calculate the mouse position within the arrangement view
         float mousePosInWindowX = ImGui.GetMousePos().X - _windowPos.X;
@@ -262,7 +262,7 @@ public static class ArrangementView
                     float scrollDelta = ImGui.GetIO().MouseWheel;
                     if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && scrollDelta != 0)
                     {
-                        NewZoomChange(scrollDelta);
+                        ZoomChange(scrollDelta);
                         _zoomedThisFrame = true;
                         //ZoomChange(scrollDelta);
                     }
