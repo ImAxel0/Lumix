@@ -53,11 +53,6 @@ public static class CoreAudioEngine
     /// <returns></returns>
     public static bool Init()
     {
-#if LOCAL_DEV
-        AudioDevice = new AudioDevice(new AsioOut("M-Audio AIR 192 4 ASIO"));
-        return true;
-#endif
-
         if (_initialized) 
             return false;
 
@@ -75,6 +70,9 @@ public static class CoreAudioEngine
             WasapiDevices.Add(device.FriendlyName, device);
         }
 
+#if LOCAL_DEV
+        AudioDevice = new AudioDevice(new AsioOut("M-Audio AIR 192 4 ASIO"));
+#else
         var wasapiOK = devices.Any();
         if (!wasapiOK)
         {
@@ -88,6 +86,7 @@ public static class CoreAudioEngine
             return false;
         }
         AudioDevice = new AudioDevice(devices.First());
+#endif
         _initialized = true;
         return true;
     }
