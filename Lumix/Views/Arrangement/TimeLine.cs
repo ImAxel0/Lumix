@@ -167,7 +167,7 @@ public static class TimeLine
 
     public static long SnapToGrid(long tick)
     {
-        long gridSpacing = (long)(TimeLine.PPQ * TimeLine.BeatsPerBar);
+        long gridSpacing = (long)(PPQ * BeatsPerBar);
         return (long)Math.Round((double)tick / gridSpacing) * gridSpacing;
     }
 }

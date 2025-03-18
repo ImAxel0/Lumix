@@ -89,7 +89,7 @@ public abstract class Clip
         {
             if (_startMarker != value)
             {
-                StartMarkerChanged.Invoke(this, new EventArguments.TimeChangedEventArgs(_startMarker, value));
+                StartMarkerChanged?.Invoke(this, new EventArguments.TimeChangedEventArgs(_startMarker, value));
                 _startMarker = value;
             }
         }
@@ -105,7 +105,7 @@ public abstract class Clip
         {
             if (_endMarker != value)
             {
-                EndMarkerChanged.Invoke(this, new EventArguments.TimeChangedEventArgs(_endMarker, value));
+                EndMarkerChanged?.Invoke(this, new EventArguments.TimeChangedEventArgs(_endMarker, value));
                 _endMarker = value;
             }
         }

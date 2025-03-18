@@ -10,7 +10,6 @@ namespace Lumix.Tracks.Master;
 public class MasterAudioEngine : IDisposable
 {
     //private readonly IWavePlayer outputDevice;
-    private static bool _initialized;
     private readonly MixingSampleProvider masterMixer;
     public MixingSampleProvider MasterMixer => masterMixer;
     private readonly MeteringSampleProvider meteringProvider;
@@ -21,11 +20,7 @@ public class MasterAudioEngine : IDisposable
 
     public MasterAudioEngine(int sampleRate = 44100, int channelCount = 2)
     {
-        if (!_initialized)
-        {
-            AudioSettings.Init();
-            _initialized = true;
-        }
+        CoreAudioEngine.Init();
 
         masterMixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount))
         {
@@ -37,8 +32,8 @@ public class MasterAudioEngine : IDisposable
         // Add metering for the master track
         meteringProvider = new MeteringSampleProvider(stereoSampleProvider, 100);
         meteringProvider.StreamVolume += (s, e) => VolumeMeasured?.Invoke(this, e);
-        AudioSettings.OutputDevice.Init(meteringProvider);
-        AudioSettings.OutputDevice.Play();
+        CoreAudioEngine.AudioDevice.OutputDevice.Init(meteringProvider);
+        CoreAudioEngine.AudioDevice.OutputDevice.Play();
     }
 
     public void AddTrack(TrackEngine trackEngine)

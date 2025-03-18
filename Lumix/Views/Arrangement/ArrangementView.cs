@@ -199,8 +199,8 @@ public static class ArrangementView
           
             if (ImGui.BeginChild("timeline_bars", new Vector2(ImGui.GetContentRegionAvail().X - 10, 20), ImGuiChildFlags.FrameStyle))
             {
-                long startTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX);
-                long endTick = TimeLine.PositionToTime(ArrangementView.ArrangementScroolX + ArrangementWidth);
+                long startTick = TimeLine.PositionToTime(ArrangementScroolX);
+                long endTick = TimeLine.PositionToTime(ArrangementScroolX + ArrangementWidth);
 
                 float pixelsPerTick = TimeLine.PixelsPerTick;
                 long beatSpacing = TimeLine.PPQ;
@@ -219,7 +219,7 @@ public static class ArrangementView
 
                 for (long tick = (startTick / gridSpacing) * gridSpacing; tick <= endTick; tick += gridSpacing)
                 {
-                    float xPosition = TimeLine.TimeToPosition(tick) - ArrangementView.ArrangementScroolX + ArrangementView.WindowPos.X;
+                    float xPosition = TimeLine.TimeToPosition(tick) - ArrangementScroolX + WindowPos.X;
                     var musicalTime = TimeLine.TicksToMusicalTime(tick, true);
                     xPosition -= ImGui.CalcTextSize($"{musicalTime.Bars}.{musicalTime.Beats}").X / 2;
 

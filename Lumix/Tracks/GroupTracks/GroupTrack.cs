@@ -20,7 +20,7 @@ public class GroupTrack : Track
         Name = name;
         Vector4 trackCol = ImGuiTheme.GetRandomColor();
         Color = trackCol;
-        Engine = new TrackGroupEngine(this, AudioSettings.SampleRate);
+        Engine = new TrackGroupEngine(this, CoreAudioEngine.SampleRate);
         Engine.VolumeMeasured += (sender, e) =>
         {
             // Get the maximum peak across all channels

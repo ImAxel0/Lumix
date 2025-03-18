@@ -74,5 +74,5 @@ class AudioPreviewEngine : IDisposable
 
     }
 
-    public static AudioPreviewEngine Instance = new AudioPreviewEngine(AudioSettings.SampleRate);
+    public static AudioPreviewEngine Instance = new AudioPreviewEngine(CoreAudioEngine.SampleRate);
 }

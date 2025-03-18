@@ -20,7 +20,7 @@ public class ImGuiTheme
 
     public static Vector4 GetRandomColor()
     {
-        return DefaultColors[new Random().Next(0, ImGuiTheme.DefaultColors.Length)];
+        return DefaultColors[new Random().Next(0, DefaultColors.Length)];
     }
 
     public static Vector4 HtmlToVec4(string htmlColor, float alpha = 1f)

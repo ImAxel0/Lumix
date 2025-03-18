@@ -82,7 +82,7 @@ public class VstAudioProcessor : IAudioProcessor
         var outputMgr = new VstAudioBufferManager(outputCount, blockSize);
 
         _vstPlugin.PluginContext.PluginCommandStub.Commands.SetBlockSize(blockSize);
-        _vstPlugin.PluginContext.PluginCommandStub.Commands.SetSampleRate(AudioSettings.SampleRate);
+        _vstPlugin.PluginContext.PluginCommandStub.Commands.SetSampleRate(CoreAudioEngine.SampleRate);
         _vstPlugin.PluginContext.PluginCommandStub.Commands.SetProcessPrecision(VstProcessPrecision.Process32);
 
         _inputBuffers = inputMgr.Buffers.ToArray();

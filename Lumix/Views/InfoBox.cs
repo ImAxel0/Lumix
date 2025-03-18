@@ -41,7 +41,7 @@ public class InfoBox
             {
                 _hidden = false;
             }
-            InfoBox.SetInfoData("Hide Info Box toggle", "Hide or show info box.");
+            SetInfoData("Hide Info Box toggle", "Hide or show info box.");
             return;
         }
 
@@ -61,7 +61,7 @@ public class InfoBox
             {
                 _hidden = true;
             }
-            InfoBox.SetInfoData("Hide Info Box toggle", "Hide or show info box.");
+            SetInfoData("Hide Info Box toggle", "Hide or show info box.");
 
             ImGui.SameLine();
             ImGui.SeparatorText(_infoTitle);

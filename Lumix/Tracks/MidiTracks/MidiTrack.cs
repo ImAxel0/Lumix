@@ -16,7 +16,7 @@ public class MidiTrack : Track
         Name = name;
         Vector4 trackCol = ImGuiTheme.GetRandomColor();
         Color = trackCol;
-        Engine = new TrackMidiEngine(this, AudioSettings.SampleRate);
+        Engine = new TrackMidiEngine(this, CoreAudioEngine.SampleRate);
         Engine.VolumeMeasured += (sender, e) =>
         {
             // Get the maximum peak across all channels

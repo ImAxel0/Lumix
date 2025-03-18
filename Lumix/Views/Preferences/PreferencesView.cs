@@ -83,7 +83,7 @@ public static class PreferencesView
         ImGui.Spacing();
         ImGui.Text("Audio Device");
         
-        switch (AudioSettings.AudioDriver)
+        switch (CoreAudioEngine.AudioDevice.DriverType)
         {
             case AudioDriver.Wasapi:
                 {
@@ -117,35 +117,34 @@ public static class PreferencesView
         ImGui.NextColumn();
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.BeginCombo("##driver_type_combo", AudioSettings.AudioDriver.ToString(), ImGuiComboFlags.HeightLargest))
+        if (ImGui.BeginCombo("##driver_type_combo", CoreAudioEngine.AudioDevice.DriverType.ToString(), ImGuiComboFlags.HeightLargest))
         {
             foreach (var driver in Enum.GetValues<AudioDriver>())
             {
-                bool isAsioInstalled = AsioOut.GetDriverNames().Length > 0;
-                var flags = (driver == AudioDriver.Asio && !isAsioInstalled) ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None;
+                var flags = (driver == AudioDriver.Asio && !AsioOut.isSupported()) ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None;
 
                 if (ImGui.Selectable(driver.ToString(), false, flags))
                 {
-                    AudioSettings.SetDriver(driver);
-                    AudioSettings.Init(true);
+                    CoreAudioEngine.ChangeDriver(driver);
+                    //AudioSettings.SetDriver(driver);
+                    //AudioSettings.Init(true);
                 }
             }
             ImGui.EndCombo();
         }
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.BeginCombo("##audio_device_combo", AudioSettings.DeviceName, ImGuiComboFlags.HeightLarge))
+        if (ImGui.BeginCombo("##audio_device_combo", CoreAudioEngine.AudioDevice.DeviceName, ImGuiComboFlags.HeightLarge))
         {
-            switch (AudioSettings.AudioDriver)
+            switch (CoreAudioEngine.AudioDevice.DriverType)
             {
                 case AudioDriver.Wasapi:
                     {
-                        foreach (var device in AudioSettings.WasapiDevices)
+                        foreach (var device in CoreAudioEngine.WasapiDevices)
                         {
                             if (ImGui.Selectable(device.Key))
                             {
-                                var wasapi = new WasapiOut(device.Value, NAudio.CoreAudioApi.AudioClientShareMode.Exclusive, true, (int)AudioSettings.WasapiLatency);
-                                AudioSettings.UpdateAudioOutput(wasapi, device.Key);
+                                CoreAudioEngine.ChangeDevice(device.Value);
                             }
                         }
                     }
@@ -156,8 +155,7 @@ public static class PreferencesView
                         {
                             if (ImGui.Selectable(device))
                             {
-                                var asio = new AsioOut(device);
-                                AudioSettings.UpdateAudioOutput(asio, asio.DriverName);
+                                CoreAudioEngine.ChangeDevice(new AsioOut(device));
                             }
                         }
                     }
@@ -172,31 +170,25 @@ public static class PreferencesView
         UiElement.Button("Output Config", new(150, 25));
         ImGui.Spacing();
 
-        if (AudioSettings.AudioDriver == AudioDriver.Wasapi)
+        if (CoreAudioEngine.AudioDevice.DriverType == AudioDriver.Wasapi)
         {
             ImGui.BeginDisabled();
-            if (UiElement.DragSlider("ms##wasapi_latency", 100, ref AudioSettings.WasapiLatency, 1, 15, 500, "%.0f", ImGuiSliderFlags.AlwaysClamp | ImGuiSliderFlags.NoInput))
+            if (UiElement.DragSlider("ms##wasapi_latency", 100, ref CoreAudioEngine.WasapiLatency, 1, 15, 500, "%.0f", ImGuiSliderFlags.AlwaysClamp | ImGuiSliderFlags.NoInput))
             {
-                if (AudioSettings.OutputDevice is WasapiOut)
-                {
-                    AudioSettings.UpdateAudioOutput(AudioSettings.OutputDevice, AudioSettings.DeviceName);
-                }
+                CoreAudioEngine.LatencyChanged();
             }
             if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
             {
-                AudioSettings.WasapiLatency = 50;
-                if (AudioSettings.OutputDevice is WasapiOut)
-                {
-                    AudioSettings.UpdateAudioOutput(AudioSettings.OutputDevice, AudioSettings.DeviceName);
-                }
+                CoreAudioEngine.WasapiLatency = 50;
+                CoreAudioEngine.LatencyChanged();
             }
             ImGui.EndDisabled();
         }
-        else if (AudioSettings.AudioDriver == AudioDriver.Asio)
+        else if (CoreAudioEngine.AudioDevice.DriverType == AudioDriver.Asio)
         {
             if (UiElement.Button("Hardware Setup", new(150, 25)))
             {
-                if (AudioSettings.OutputDevice is AsioOut asio)
+                if (CoreAudioEngine.AudioDevice.OutputDevice is AsioOut asio)
                     asio.ShowControlPanel();
             }
         }
@@ -215,15 +207,14 @@ public static class PreferencesView
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         ImGui.BeginDisabled();
-        if (ImGui.BeginCombo("##sample_rate_combo", AudioSettings.SampleRate.ToString(), ImGuiComboFlags.HeightLargest))
+        if (ImGui.BeginCombo("##sample_rate_combo", CoreAudioEngine.SampleRate.ToString(), ImGuiComboFlags.HeightLargest))
         {
             int[] sampleRates = new[] { 22050, 44100, 48000, 96000, 192000 };
             foreach (var rate in sampleRates)
             {
-                if (ImGui.Selectable(rate.ToString(), AudioSettings.SampleRate == rate))
+                if (ImGui.Selectable(rate.ToString(), CoreAudioEngine.SampleRate == rate))
                 {
-                    AudioSettings.SetSampleRate(rate);
-                    AudioSettings.UpdateAudioOutput(AudioSettings.OutputDevice, AudioSettings.DeviceName);
+                    CoreAudioEngine.ChangeSampleRate(rate);
                 }
             }
             ImGui.EndCombo();

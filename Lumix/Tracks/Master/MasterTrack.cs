@@ -31,7 +31,7 @@ public class MasterTrack
 
     public MasterTrack()
     {
-        _masterEngine = new MasterAudioEngine(AudioSettings.SampleRate);
+        _masterEngine = new MasterAudioEngine(CoreAudioEngine.SampleRate);
         _masterEngine.VolumeMeasured += (sender, e) =>
         {
             // Get the maximum peak across all channels

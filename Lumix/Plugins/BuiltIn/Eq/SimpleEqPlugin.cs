@@ -42,19 +42,19 @@ public class SimpleEqPlugin : BuiltInPlugin, IAudioProcessor
         switch (_eqType)
         {
             case EqType.LowPass:
-                eq = BiQuadFilter.LowPassFilter(AudioSettings.SampleRate, _frequency, _q);
+                eq = BiQuadFilter.LowPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
                 _icon = Fontaudio.FilterLowpass;
                 break;
             case EqType.HighPass:
-                eq = BiQuadFilter.HighPassFilter(AudioSettings.SampleRate, _frequency, _q);
+                eq = BiQuadFilter.HighPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
                 _icon = Fontaudio.FilterHighpass;
                 break;
             case EqType.LowShelf:
-                eq = BiQuadFilter.LowShelf(AudioSettings.SampleRate, _frequency, _q, _gain);
+                eq = BiQuadFilter.LowShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
                 _icon = Fontaudio.FilterShelvingLo;
                 break;
             case EqType.HighShelf:
-                eq = BiQuadFilter.HighShelf(AudioSettings.SampleRate, _frequency, _q, _gain);
+                eq = BiQuadFilter.HighShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
                 _icon = Fontaudio.FilterShelvingHi;
                 break;
         }
