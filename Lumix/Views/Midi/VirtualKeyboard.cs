@@ -2,18 +2,16 @@
 using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Arrangement;
 using Melanchall.DryWetMidi.Common;
-using Veldrid;
+using Melanchall.DryWetMidi.Core;
 
 namespace Lumix.Views.Midi;
 
 public static class VirtualKeyboard
 {
-    private static bool _enabled = true;
-    public static bool Enabled => _enabled;
+    public static bool Enabled { get; set; } = true;
+    public static int Velocity { get; set; } = 100;
+    public static int OctaveShift { get; set; } = 0;
 
-    private static int _octaveShift = 0;
-    private static int _velocity = 100;
-    private static bool _isKeyDown;
     private static readonly Dictionary<ImGuiKey, int> _keyNoteMap = new()
     {
         { ImGuiKey.A, 60 }, // C4
@@ -31,109 +29,40 @@ public static class VirtualKeyboard
         { ImGuiKey.K, 72 }, // C5
     };
 
-    private static readonly Dictionary<Key, int> _veldridKeyNoteMap = new()
-    {
-        { Key.A, 60 }, // C4
-        { Key.W, 61 }, // C#4
-        { Key.S, 62 }, // D4
-        { Key.E, 63 }, // D#4
-        { Key.D, 64 }, // E4
-        { Key.F, 65 }, // F4
-        { Key.T, 66 }, // F#4
-        { Key.G, 67 }, // G4
-        { Key.Y, 68 }, // G#4
-        { Key.H, 69 }, // A4
-        { Key.U, 70 }, // A#4
-        { Key.J, 71 }, // B4
-        { Key.K, 72 }, // C5
-    };
-
     public static void Toggle()
     {
-        _enabled = !_enabled;
-    }
-
-    private static void ShiftOctave(int amount)
-    {
-        _octaveShift += amount;
-        _octaveShift = Math.Clamp(_octaveShift, -36, 36);
-        InfoBox.SetInfoData("Octave adjusted", $"Octave shift: {_octaveShift}", true);
-    }
-
-    private static void ShiftVelocity(int amount)
-    {
-        _velocity += amount;
-        _velocity = Math.Clamp(_velocity, 7, 127);
-        InfoBox.SetInfoData("Velocity adjusted", $"Velocity: {_velocity}", true);
-    }
-
-    public static void KeyDownFromPlugin(KeyEvent ev)
-    {
-        if (ev.Repeat)
-            return;
-
-        if (ev.Key == Key.Space)
+        Enabled = !Enabled;
+        ArrangementView.Tracks.ForEach(track =>
         {
-            if (TimeLine.IsPlaying())
-                TimeLine.StopPlayback();
-            else
-                TimeLine.StartPlayback();
-        }
-
-        if (!_enabled)
-            return;
-
-        if (_veldridKeyNoteMap.ContainsKey(ev.Key))
-        {
-            ArrangementView.Tracks.ForEach(track =>
+            if (track.Engine is TrackMidiEngine midiEngine)
             {
-                if (track.RecordOnStart && track.Engine is TrackMidiEngine midiEngine)
-                {
-                    midiEngine.SendNoteOnEvent(0,
-                        new SevenBitNumber((byte)(_veldridKeyNoteMap[ev.Key] + _octaveShift)),
-                        new SevenBitNumber((byte)_velocity));
-                }
-            });
-        }
-
-        if (ev.Key == Key.Z)
-        {
-            ShiftOctave(-12);
-        }
-
-        if (ev.Key == Key.X)
-        {
-            ShiftOctave(+12);
-        }
-
-        if (ev.Key == Key.C)
-        {
-            ShiftVelocity(-10);
-        }
-
-        if (ev.Key == Key.V)
-        {
-            ShiftVelocity(+10);
-        }
+                midiEngine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                    new ControlChangeEvent(ControlUtilities.AsSevenBitNumber(ControlName.AllNotesOff), SevenBitNumber.MinValue));
+            }
+        });
     }
 
-    public static void KeyUpFromPlugin(KeyEvent ev)
+    public static void ShiftOctave(int amount)
     {
-        if (!_enabled)
-            return;
-
-        if (_veldridKeyNoteMap.ContainsKey(ev.Key))
+        ArrangementView.Tracks.ForEach(track =>
         {
-            ArrangementView.Tracks.ForEach(track =>
+            if (track.Engine is TrackMidiEngine midiEngine)
             {
-                if (track.RecordOnStart && track.Engine is TrackMidiEngine midiEngine)
-                {
-                    midiEngine.SendNoteOffEvent(0,
-                        new SevenBitNumber((byte)(_veldridKeyNoteMap[ev.Key] + _octaveShift)),
-                        new SevenBitNumber(0));
-                }
-            });
-        }
+                midiEngine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                    new ControlChangeEvent(ControlUtilities.AsSevenBitNumber(ControlName.AllNotesOff), SevenBitNumber.MinValue));
+            }
+        });
+
+        OctaveShift += amount;
+        OctaveShift = Math.Clamp(OctaveShift, -36, 36);
+        InfoBox.SetInfoData("Octave adjusted", $"Octave shift: {OctaveShift}", true);
+    }
+
+    public static void ShiftVelocity(int amount)
+    {
+        Velocity += amount;
+        Velocity = Math.Clamp(Velocity, 7, 127);
+        InfoBox.SetInfoData("Velocity adjusted", $"Velocity: {Velocity}", true);
     }
 
     public static void ListenForKeyPresses()
@@ -146,12 +75,10 @@ public static class VirtualKeyboard
                 {
                     if (track.RecordOnStart && track.Engine is TrackMidiEngine midiEngine)
                     {
-                        midiEngine.SendNoteOnEvent(0,
-                            new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)),
-                            new SevenBitNumber((byte)_velocity));
+                        midiEngine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOnEvent((SevenBitNumber)(_keyNoteMap[key] + OctaveShift), (SevenBitNumber)Velocity));
                     }
                 });
-                _isKeyDown = true;
             }
 
             if (ImGui.IsKeyReleased(key))
@@ -160,21 +87,19 @@ public static class VirtualKeyboard
                 {
                     if (track.RecordOnStart && track.Engine is TrackMidiEngine midiEngine)
                     {
-                        midiEngine.SendNoteOffEvent(0,
-                            new SevenBitNumber((byte)(_keyNoteMap[key] + _octaveShift)),
-                            new SevenBitNumber(0));
+                        midiEngine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOffEvent((SevenBitNumber)(_keyNoteMap[key] + OctaveShift), SevenBitNumber.MinValue));
                     }
                 });
-                _isKeyDown = false;
             }
         }
 
-        if (ImGui.IsKeyPressed(ImGuiKey.Z, false) && !_isKeyDown)
+        if (ImGui.IsKeyPressed(ImGuiKey.Z, false))
         {
             ShiftOctave(-12);
         }
 
-        if (ImGui.IsKeyPressed(ImGuiKey.X, false) && !_isKeyDown)
+        if (ImGui.IsKeyPressed(ImGuiKey.X, false))
         {
             ShiftOctave(+12);
         }

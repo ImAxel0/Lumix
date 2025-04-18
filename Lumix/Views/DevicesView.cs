@@ -9,13 +9,14 @@ using Lumix.Tracks;
 using Lumix.Tracks.MidiTracks;
 using Lumix.Views.Sidebar;
 using Lumix.ImGuiExtensions;
+using Lumix.Views.Arrangement;
 
 namespace Lumix.Views;
 
 public static class DevicesView
 {
     public static Track SelectedTrack { get; set; }
-    public static List<IAudioProcessor> SelectedPlugins { get; set; } = new();
+    public static List<IPlugin> SelectedPlugins { get; set; } = new();
 
     private static float _rectsSpacing = 10f;
     private static bool _windowHovered;
@@ -39,75 +40,81 @@ public static class DevicesView
         // Delete all selected plugins from chain
         if (ImGui.IsKeyPressed(ImGuiKey.Delete, false))
         {
-            SelectedPlugins.ForEach(plugin => plugin.DeleteRequested = true);
+            foreach (var plugin in SelectedPlugins)
+            {
+                foreach (var track in ArrangementView.Tracks)
+                {
+                    track.Engine.PluginChainSampleProvider.RemovePlugin(plugin);
+                }
+            }
         }
 
         // Duplicated plugins
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl) && ImGui.IsKeyPressed(ImGuiKey.D, false))
         {
-            SelectedPlugins.ForEach(plugin => plugin.DuplicateRequested = true);
+            //SelectedPlugins.ForEach(plugin => plugin.DuplicateRequested = true);
         }
     }
 
-    private static void RenderPluginRect(IAudioProcessor plugin, Vector2 rectSize)
+    private static void RenderPluginRect(IPlugin plugin, Vector2 rectSize)
     {
-        var vstPlugin = plugin.GetPlugin<VstPlugin>();
-        if (vstPlugin == null) // If plugin is built in
+        if (!plugin.IsVst) // If plugin is built in
         {
             var p = plugin as BuiltInPlugin;
             p.RenderRect(plugin);
+            return;
         }
-        else if (vstPlugin != null) // If plugin is external
+
+        // If plugin is external
+        var vst = plugin as VstPlugin;
+        bool selected = SelectedPlugins.Contains(plugin);
+        Vector4 menuBarCol = selected ? ImGuiTheme.SelectionCol : new Vector4(0.28f, 0.28f, 0.28f, 1);
+        ImGui.PushStyleColor(ImGuiCol.MenuBarBg, menuBarCol);
+        ImGui.BeginChild($"plugin_rect{plugin.PluginId}", rectSize, ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar);
+
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && !ImGui.IsAnyItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
-            bool selected = SelectedPlugins.Contains(plugin);
-            Vector4 menuBarCol = selected ? ImGuiTheme.SelectionCol : new Vector4(0.28f, 0.28f, 0.28f, 1);
-            ImGui.PushStyleColor(ImGuiCol.MenuBarBg, menuBarCol);
-            ImGui.BeginChild($"plugin_rect{vstPlugin.PluginId}", rectSize, ImGuiChildFlags.Border, ImGuiWindowFlags.MenuBar);
-
-            if (ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows) && !ImGui.IsAnyItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
             {
-                if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
-                {
-                    SelectedPlugins.Add(plugin);
-                }
-                else
-                {
-                    SelectedPlugins.Clear();
-                    SelectedPlugins.Add(plugin);
-                }
+                SelectedPlugins.Add(plugin);
             }
-
-            if (ImGui.BeginMenuBar())
+            else
             {
-                var textCol = selected ? new Vector4(0, 0, 0, 1) : ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
-
-                if (UiElement.RoundToggle(plugin.Enabled, new Vector4(0.95f, 0.58f, 0.13f, 1f)))
-                {
-                    plugin.Toggle();
-                }
-
-                ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 15f);
-                ImGui.TextColored(textCol, $"{FontAwesome6.Wrench}");
-                if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-                {
-                    vstPlugin.OpenPluginWindow();
-                }
-                ImGui.PopStyleVar();
-
-                ImGui.TextColored(textCol, vstPlugin.PluginName);
-                ImGui.EndMenuBar();
+                SelectedPlugins.Clear();
+                SelectedPlugins.Add(plugin);
             }
-
-            string vstType = vstPlugin.PluginType == VstType.VST ? "Fx" : "Instrument";
-            ImGui.Text($"VST Type: {vstType}");
-            ImGui.Text($"Parameters: {vstPlugin.PluginContext.PluginInfo.ParameterCount}");
-            ImGui.Text($"In: {vstPlugin.PluginContext.PluginInfo.AudioInputCount}");
-            ImGui.SameLine();
-            ImGui.Text($"Out: {vstPlugin.PluginContext.PluginInfo.AudioOutputCount}");
-
-            ImGui.EndChild();
-            ImGui.PopStyleColor();
         }
+
+        if (ImGui.BeginMenuBar())
+        {
+            var textCol = selected ? new Vector4(0, 0, 0, 1) : ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
+
+            if (UiElement.RoundToggle(plugin.Enabled, new Vector4(0.95f, 0.58f, 0.13f, 1f)))
+            {
+                plugin.Toggle();
+            }
+
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 15f);
+            ImGui.TextColored(textCol, $"{FontAwesome6.Wrench}");
+            if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                vst.OpenPluginWindow();
+            }
+            ImGui.PopStyleVar();
+
+            ImGui.TextColored(textCol, plugin.PluginName);
+            ImGui.EndMenuBar();
+        }
+
+        string vstType = plugin.PluginType == PluginType.Effect ? "Fx" : "Instrument";
+        ImGui.Text($"VST Type: {vstType}");
+        ImGui.Text($"Parameters: {vst.PluginContext.PluginInfo.ParameterCount}");
+        ImGui.Text($"In: {vst.PluginContext.PluginInfo.AudioInputCount}");
+        ImGui.SameLine();
+        ImGui.Text($"Out: {vst.PluginContext.PluginInfo.AudioOutputCount}");
+
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
     }
 
     private static void ListenForPluginDrop()
@@ -124,7 +131,7 @@ public static class DevicesView
                 {
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
-                        var pluginInstance = SidebarView.DraggedBuiltInPlugin as IAudioProcessor;
+                        var pluginInstance = SidebarView.DraggedBuiltInPlugin as IPlugin;
                         if (SelectedTrack != null)
                         {
                             SelectedTrack.Engine.PluginChainSampleProvider.AddPlugin(pluginInstance);
@@ -142,14 +149,13 @@ public static class DevicesView
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
                         var vst = new VstPlugin(SidebarView.DraggedFilePath);
-                        var vstProcessor = new VstAudioProcessor(vst);
-                        if (SelectedTrack != null && vst.PluginType != VstType.VSTi)
+                        if (SelectedTrack != null && vst.PluginType != PluginType.Instrument)
                         {
-                            SelectedTrack.Engine.PluginChainSampleProvider.AddPlugin(vstProcessor);
+                            SelectedTrack.Engine.PluginChainSampleProvider.AddPlugin(vst);
                         }
                         else if (SelectedTrack != null && SelectedTrack is MidiTrack)
                         {
-                            SelectedTrack.Engine.PluginChainSampleProvider.AddPlugin(vstProcessor);
+                            SelectedTrack.Engine.PluginChainSampleProvider.AddPlugin(vst);
                         }
                         else
                         {
@@ -173,7 +179,7 @@ public static class DevicesView
         ImGui.SetCursorPos(pos);
     }
 
-    private static void HandlePluginSwap(IAudioProcessor plugin)
+    private static void HandlePluginSwap(IPlugin plugin)
     {
         // Enable swapping only if one plugin is selected in chain and check if said plugin is param plugin
         if (SelectedPlugins.Count == 1 && SelectedPlugins[0] == plugin)
@@ -228,10 +234,6 @@ public static class DevicesView
 
             if (SelectedTrack != null)
             {
-                // Remove deleted plugins from chain
-                var deletedPlugins = SelectedTrack.Engine.PluginChainSampleProvider.FxPlugins.FindAll(plug => plug.DeleteRequested);
-                deletedPlugins.ForEach(del => SelectedTrack.Engine.PluginChainSampleProvider.RemovePlugin(del));
-
                 Vector2 space = ImGui.GetContentRegionAvail();
                 Vector4 bgCol = new(0.22f, 0.22f, 0.22f, 1);
 
@@ -249,12 +251,6 @@ public static class DevicesView
                 {
                     RenderPluginRect(instrumentPlugin, rectSize);
                     ImGui.SameLine(0, _rectsSpacing);
-
-                    // Remove deleted instrument 
-                    if (instrumentPlugin.DeleteRequested)
-                    {
-                        SelectedTrack.Engine.PluginChainSampleProvider.RemovePlugin(instrumentPlugin);
-                    }
                 }
 
                 foreach (var plugin in SelectedTrack.Engine.PluginChainSampleProvider.FxPlugins.ToList())

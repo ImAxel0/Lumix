@@ -2,13 +2,19 @@
 using ImGuiNET;
 using Lumix.ImGuiExtensions;
 using Lumix.Views.Preferences.Audio;
+using Melanchall.DryWetMidi.Core;
 using NAudio.Dsp;
 using System.Numerics;
 
 namespace Lumix.Plugins.BuiltIn.Eq;
 
-public class SimpleEqPlugin : BuiltInPlugin, IAudioProcessor
+public class SimpleEqPlugin : BuiltInPlugin
 {
+    public override bool Enabled { get; set; } = true;
+    public override string PluginName { get; set; } = "SimpleEq";
+    public override PluginType PluginType => PluginType.Effect;
+    public override BuiltInCategory Category => BuiltInCategory.EQ;
+
     private string _icon = string.Empty;
     private EqType _eqType;
     private enum EqType
@@ -23,48 +29,6 @@ public class SimpleEqPlugin : BuiltInPlugin, IAudioProcessor
     private float _frequency = 4000f;
     private float _q = 0.71f;
     private float _gain = 0f;
-
-    public T? GetPlugin<T>() where T : class
-    {
-        return null;
-    }
-
-    public void Process(float[] input, float[] output, int samplesRead)
-    {
-        if (_eqType == EqType.None)
-        {
-            _icon = string.Empty;
-            return;
-        }
-
-
-        BiQuadFilter eq = null;
-        switch (_eqType)
-        {
-            case EqType.LowPass:
-                eq = BiQuadFilter.LowPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
-                _icon = Fontaudio.FilterLowpass;
-                break;
-            case EqType.HighPass:
-                eq = BiQuadFilter.HighPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
-                _icon = Fontaudio.FilterHighpass;
-                break;
-            case EqType.LowShelf:
-                eq = BiQuadFilter.LowShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
-                _icon = Fontaudio.FilterShelvingLo;
-                break;
-            case EqType.HighShelf:
-                eq = BiQuadFilter.HighShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
-                _icon = Fontaudio.FilterShelvingHi;
-                break;
-        }
-
-        for (int i = 0; i < samplesRead; i += 2)
-        {
-            output[i] = eq.Transform(input[i]);
-            output[i + 1] = eq.Transform(input[i + 1]);
-        }
-    }
 
     public override void RenderRectContent()
     {
@@ -133,9 +97,49 @@ public class SimpleEqPlugin : BuiltInPlugin, IAudioProcessor
         ImGui.EndChild();
     }
 
-    public bool Enabled { get; set; } = true;
-    public bool DeleteRequested { get; set; }
-    public bool DuplicateRequested { get; set; }
-    public override string PluginName => "SimpleEq";
-    public override BuiltInCategory Category => BuiltInCategory.EQ;
+    public override void Process(float[] input, float[] output, int samplesRead)
+    {
+        if (_eqType == EqType.None)
+        {
+            _icon = string.Empty;
+            return;
+        }
+
+        BiQuadFilter eq = null;
+        switch (_eqType)
+        {
+            case EqType.LowPass:
+                eq = BiQuadFilter.LowPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
+                _icon = Fontaudio.FilterLowpass;
+                break;
+            case EqType.HighPass:
+                eq = BiQuadFilter.HighPassFilter(CoreAudioEngine.SampleRate, _frequency, _q);
+                _icon = Fontaudio.FilterHighpass;
+                break;
+            case EqType.LowShelf:
+                eq = BiQuadFilter.LowShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
+                _icon = Fontaudio.FilterShelvingLo;
+                break;
+            case EqType.HighShelf:
+                eq = BiQuadFilter.HighShelf(CoreAudioEngine.SampleRate, _frequency, _q, _gain);
+                _icon = Fontaudio.FilterShelvingHi;
+                break;
+        }
+
+        for (int i = 0; i < samplesRead; i += 2)
+        {
+            output[i] = eq.Transform(input[i]);
+            output[i + 1] = eq.Transform(input[i + 1]);
+        }
+    }
+
+    public override void Dispose()
+    {
+
+    }
+
+    public override void ReceiveMidiEvent(MidiEvent midiEvent)
+    {
+
+    }
 }

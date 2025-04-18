@@ -1,104 +1,72 @@
 ﻿using Jacobi.Vst.Core;
 using Jacobi.Vst.Host.Interop;
-using Lumix.Views.Midi;
+using Melanchall.DryWetMidi.Core;
 using System.Runtime.InteropServices;
 using Vanara.PInvoke;
 using Veldrid.Sdl2;
 
 namespace Lumix.Plugins.VST;
 
-public enum VstType
+public class VstPlugin : IPlugin
 {
-    /// <summary>VST is an effect</summary>
-    VST,
-    /// <summary>VST is an instrument</summary>
-    VSTi
-}
+    #region Interface Properties
 
-public class VstPlugin
-{
-    private string _pluginId = Guid.NewGuid().ToString();
-    public string PluginId => _pluginId;
+    /// <inheritdoc/>
+    public bool Enabled { get; set; } = true;
 
-    private string _pluginName;
-    public string PluginName => _pluginName;
+    /// <summary>
+    /// Name of the VST plugin. (coming from dll name)
+    /// </summary>
+    public string PluginName { get; set; }
 
-    private VstType _pluginType;
-    public VstType PluginType => _pluginType;
+    /// <inheritdoc/>
+    public string PluginId { get; private set; } = Guid.NewGuid().ToString();
 
-    private VstPluginContext _pluginContext;
-    public VstPluginContext PluginContext => _pluginContext;
+    /// <inheritdoc/>
+    public PluginType PluginType { get; private set; }
 
-    private Sdl2Window _pluginWindow;
-    public Sdl2Window PluginWindow => _pluginWindow;
+    /// <inheritdoc/>
+    public PluginKeyboard VKeyboard { get; }
+
+    /// <inheritdoc/>
+    public bool IsVst { get; } = true;
+
+    #endregion
+
+    #region Public Properties
+
+    /// <summary>
+    /// Process audio buffer through the VST plugin.
+    /// </summary>
+    public VstAudioProcessor VstProcessor { get; private set; }
+
+    /// <summary>
+    /// Handle VST midi events.
+    /// </summary>
+    public VstMidiHandler MidiHandler { get; private set; }
+
+    /// <summary>
+    /// Plugin context.
+    /// </summary>
+    public VstPluginContext PluginContext { get; private set; }
+
+    /// <summary>
+    /// Plugin window.
+    /// </summary>
+    public Sdl2Window PluginWindow { get; private set; }
+
+    #endregion
 
     public VstPlugin(string pluginPath)
     {
-        _pluginContext = LoadPlugin(pluginPath);
-        _pluginName = Path.GetFileNameWithoutExtension(pluginPath);
-        _pluginType = _pluginContext.PluginInfo.Flags.HasFlag(VstPluginFlags.IsSynth) ? VstType.VSTi : VstType.VST;
+        VKeyboard = new PluginKeyboard(this);
+        PluginContext = LoadPlugin(pluginPath);
+        PluginName = Path.GetFileNameWithoutExtension(pluginPath);
+        PluginType = PluginContext.PluginInfo.Flags.HasFlag(VstPluginFlags.IsSynth) 
+            ? PluginType.Instrument : PluginType.Effect;
+        VstProcessor = new VstAudioProcessor(this);
+        MidiHandler = new VstMidiHandler(this);
     }
-
-    public void SendNoteOn(int channel, int note, int velocity)
-    {
-        if (_pluginContext == null) return;
-
-        var midiEvent = new VstMidiEvent(
-            deltaFrames: 0,               // When the event occurs (relative to the current processing block)
-            noteLength: 0,                // Duration of the note (optional, can be 0)
-            noteOffset: 0,                // Offset within the note (optional, can be 0)
-            midiData: new byte[]
-            {
-                (byte)(0x90 | channel & 0x0F),  // Note On status byte (0x90) + channel
-                (byte)(note & 0x7F),             // Note number (0-127)
-                (byte)(velocity & 0x7F)          // Velocity (0-127)
-            },
-            detune: 0,
-            noteOffVelocity: 0);
-
-        _pluginContext.PluginCommandStub.Commands.ProcessEvents(new VstEvent[] { midiEvent });
-    }
-
-    public void SendNoteOff(int channel, int note, int velocity)
-    {
-        if (_pluginContext == null) return;
-
-        var midiEvent = new VstMidiEvent(
-            deltaFrames: 0,
-            noteLength: 0,
-            noteOffset: 0,
-            midiData: new byte[]
-            {
-                (byte)(0x80 | channel & 0x0F),  // Note Off status byte (0x80) + channel
-                (byte)(note & 0x7F),             // Note number (0-127)
-                (byte)(velocity & 0x7F)          // Release velocity (0-127)
-            },
-            detune: 0,
-            noteOffVelocity: 0);
-
-        _pluginContext.PluginCommandStub.Commands.ProcessEvents(new VstEvent[] { midiEvent });
-    }
-
-    public void SendSustainPedal(int channel, bool isPressed)
-    {
-        if (_pluginContext == null) return;
-
-        var midiEvent = new VstMidiEvent(
-            deltaFrames: 0,               // When the event occurs (relative to the current processing block)
-            noteLength: 0,                // Duration (not applicable for CC messages)
-            noteOffset: 0,                // Offset within the event (optional, can be 0)
-            midiData: new byte[]
-            {
-            (byte)(0xB0 | (channel & 0x0F)),  // Control Change status byte (0xB0) + channel
-            (byte)(64),                      // Controller number for sustain pedal
-            (byte)(isPressed ? 127 : 0)      // Controller value (127 for on, 0 for off)
-            },
-            detune: 0,
-            noteOffVelocity: 0);
-
-        _pluginContext.PluginCommandStub.Commands.ProcessEvents(new VstEvent[] { midiEvent });
-    }
-
 
     private void HostCmdStub_PluginCalled(object sender, PluginCalledEventArgs e)
     {
@@ -117,8 +85,8 @@ public class VstPlugin
 
     private void HostCmdStub_SizeWindow(object sender, SizeWindowEventArgs e)
     {
-        _pluginWindow.Width = e.Width;
-        _pluginWindow.Height = e.Height;
+        PluginWindow.Width = e.Width;
+        PluginWindow.Height = e.Height;
     }
 
     private VstPluginContext LoadPlugin(string pluginPath)
@@ -200,26 +168,26 @@ public class VstPlugin
 
     private IntPtr CreateWindow(string title, int width, int height)
     {
-        _pluginWindow = new Sdl2Window(title, 400, 400, width, height, SDL_WindowFlags.AlwaysOnTop | SDL_WindowFlags.Resizable | SDL_WindowFlags.SkipTaskbar, false);
-        _pluginWindow.Closing += () =>
+        PluginWindow = new Sdl2Window(title, 400, 400, width, height, SDL_WindowFlags.AlwaysOnTop | SDL_WindowFlags.Resizable | SDL_WindowFlags.SkipTaskbar, false);
+        PluginWindow.Closing += () =>
         {
-            if (_pluginWindow.Exists)
+            if (PluginWindow.Exists)
             {
-                _pluginContext.PluginCommandStub?.Commands.EditorClose();
+                PluginContext.PluginCommandStub?.Commands.EditorClose();
             }
         };
 
         // These allows the plugin window to communicate with the main window
-        _pluginWindow.KeyDown += VirtualKeyboard.KeyDownFromPlugin;
-        _pluginWindow.KeyUp += VirtualKeyboard.KeyUpFromPlugin;
+        PluginWindow.KeyDown += VKeyboard.KeyDownFromPlugin;
+        PluginWindow.KeyUp += VKeyboard.KeyUpFromPlugin;
 
         // Make window always stay on top
-        User32.SetWindowPos(_pluginWindow.Handle, HWND.HWND_TOPMOST, 0, 0, 0, 0, User32.SetWindowPosFlags.SWP_NOSIZE | User32.SetWindowPosFlags.SWP_NOMOVE
+        User32.SetWindowPos(PluginWindow.Handle, HWND.HWND_TOPMOST, 0, 0, 0, 0, User32.SetWindowPosFlags.SWP_NOSIZE | User32.SetWindowPosFlags.SWP_NOMOVE
             | User32.SetWindowPosFlags.SWP_NOACTIVATE | User32.SetWindowPosFlags.SWP_SHOWWINDOW);
 
-        RemoveMinimizeAndMaximizeButtons(_pluginWindow.Handle);
+        RemoveMinimizeAndMaximizeButtons(PluginWindow.Handle);
 
-        return _pluginWindow.Handle;
+        return PluginWindow.Handle;
     }
 
     /// <summary>
@@ -229,9 +197,9 @@ public class VstPlugin
     {
         Task.Run(async () =>
         {
-            while (_pluginWindow.Exists)
+            while (PluginWindow.Exists)
             {
-                _pluginContext?.PluginCommandStub.Commands.EditorIdle();
+                PluginContext?.PluginCommandStub.Commands.EditorIdle();              
                 await Task.Delay(16);
             }
         });
@@ -240,15 +208,15 @@ public class VstPlugin
     private void RecreateWindow()
     {
         // Check if the plugin has an editor
-        var rect = _pluginContext.PluginCommandStub.Commands.EditorGetRect(out var rectange);
+        var rect = PluginContext.PluginCommandStub.Commands.EditorGetRect(out var rectange);
         if (rect)
         {
             // Create a host window for the editor
-            string windowTitle = Path.GetFileNameWithoutExtension(_pluginContext.Find<string>("PluginPath"));
+            string windowTitle = Path.GetFileNameWithoutExtension(PluginContext.Find<string>("PluginPath"));
             IntPtr hwnd = CreateWindow(windowTitle, rectange.Width, rectange.Height);
 
             // Attach the editor to the window
-            _pluginContext.PluginCommandStub.Commands.EditorOpen(hwnd);
+            PluginContext.PluginCommandStub.Commands.EditorOpen(hwnd);
 
             StartEditorIdle();
             Console.WriteLine("Plugin editor opened successfully.");
@@ -261,22 +229,41 @@ public class VstPlugin
 
     public void OpenPluginWindow()
     {
-        if (!_pluginWindow.Exists)
+        if (!PluginWindow.Exists)
         {
-            int x = _pluginWindow.X;
-            int y = _pluginWindow.Y;
+            int x = PluginWindow.X;
+            int y = PluginWindow.Y;
             RecreateWindow();
-            _pluginWindow.X = x;
-            _pluginWindow.Y = y;
+            PluginWindow.X = x;
+            PluginWindow.Y = y;
         }
     }
 
-    public void Dispose(bool closeWindow = true)
+    /// <inheritdoc/>
+    public void Dispose()
     {
+        DisposeVST();
+    }
+
+    public void DisposeVST(bool closeWindow = true)
+    {
+        VstProcessor.DeleteRequested = true;
         if (closeWindow)
         {
-            _pluginWindow?.Close();
+            PluginWindow?.Close();
         }
-        _pluginContext?.Dispose();
+        PluginContext?.Dispose();
+    }
+
+    /// <inheritdoc/>
+    public void Process(float[] input, float[] output, int samplesRead)
+    {
+        VstProcessor.Process(input, output, samplesRead);
+    }
+
+    /// <inheritdoc/>
+    public void ReceiveMidiEvent(MidiEvent midiEvent)
+    {
+        MidiHandler.HandleMidiEvent(midiEvent);
     }
 }

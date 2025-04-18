@@ -1,11 +1,4 @@
-﻿using Lumix.Views.Arrangement;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Lumix.EventArguments;
+﻿namespace Lumix.EventArguments;
 
 public sealed class TimeChangedEventArgs : EventArgs
 {

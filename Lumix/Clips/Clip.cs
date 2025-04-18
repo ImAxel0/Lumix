@@ -2,14 +2,12 @@
 using ImGuiNET;
 using Lumix.Clips.AudioClips;
 using Lumix.Clips.MidiClips;
-using Lumix.EventArguments;
 using Lumix.ImGuiExtensions;
 using Lumix.Tracks;
 using Lumix.Views;
 using Lumix.Views.Arrangement;
 using Lumix.Views.Sidebar;
 using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
 using NAudio.Wave;
 using System.Numerics;
 

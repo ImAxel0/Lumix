@@ -1,11 +1,8 @@
-﻿using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
+﻿using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
 using MidiFile = Melanchall.DryWetMidi.Core.MidiFile;
-using Melanchall.DryWetMidi.Common;
-using Lumix.Plugins.VST;
 using Lumix.Plugins;
 using Lumix.Views;
 using Lumix.SampleProviders;
@@ -40,26 +37,6 @@ public class TrackMidiEngine : TrackEngine, IDisposable
         TrackStateSampleProvider = new TrackStateSampleProvider(MeteringSampleProvider, midiTrack);
     }
 
-    public void SendNoteOnEvent(int channel, SevenBitNumber noteNumber, SevenBitNumber velocity)
-    {
-        var vstPlugin = PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-        vstPlugin?.SendNoteOn(channel, noteNumber, velocity);
-        //VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(channel, noteNumber, velocity);
-    }
-
-    public void SendNoteOffEvent(int channel, SevenBitNumber noteNumber, SevenBitNumber velocity)
-    {
-        var vstPlugin = PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-        vstPlugin?.SendNoteOff(channel, noteNumber, velocity);
-        //VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOff(channel, noteNumber, velocity);
-    }
-
-    public void SendSustainPedalEvent(int channel, bool state)
-    {
-        var vstPlugin = PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-        vstPlugin?.SendSustainPedal(channel, state);
-    }
-
     public override void Fire(MidiFile midiFile, float offset, float endOffset)
     {
         _playback?.Dispose();
@@ -75,27 +52,7 @@ public class TrackMidiEngine : TrackEngine, IDisposable
         // Send MIDI events to VSTi's
         _playback.EventPlayed += (sender, e) =>
         {
-            if (e.Event is NoteOnEvent noteOn)
-            {
-                SendNoteOnEvent(0, noteOn.NoteNumber, noteOn.Velocity);
-            }
-            else if (e.Event is NoteOffEvent noteOff)
-            {
-                SendNoteOffEvent(0, noteOff.NoteNumber, noteOff.Velocity);
-            }
-            else if (e.Event is ControlChangeEvent ccEvent)
-            {
-                if (ccEvent.ControlNumber == 64) // Sustain pedal (CC 64)
-                {
-                    sustainPedalActive = ccEvent.ControlValue >= 64;
-                    SendSustainPedalEvent(0, sustainPedalActive);
-                }
-                else if (ccEvent.ControlNumber == 7) // Volume (CC 7)
-                {
-                    float volume = ccEvent.ControlValue / 127f;
-                }
-                // handle other CC events like panning, modulation, etc. here.
-            }
+            PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(e.Event);
         };
         
         _playback.Start();

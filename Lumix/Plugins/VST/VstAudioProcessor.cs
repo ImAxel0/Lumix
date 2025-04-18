@@ -4,7 +4,7 @@ using Lumix.Views.Preferences.Audio;
 
 namespace Lumix.Plugins.VST;
 
-public class VstAudioProcessor : IAudioProcessor
+public class VstAudioProcessor
 {
     private VstPlugin _vstPlugin;
     public VstPlugin VstPlugin => _vstPlugin;
@@ -14,6 +14,7 @@ public class VstAudioProcessor : IAudioProcessor
     private VstAudioBuffer[] _inputBuffers;
     private VstAudioBuffer[] _outputBuffers;
 
+    public bool DeleteRequested { get; set; }
     private int _blockSize;
     private bool _buffersInitialized;
 
@@ -46,7 +47,7 @@ public class VstAudioProcessor : IAudioProcessor
         int samplesRead = inputBuffer.Read(blockInput, 0, blockInput.Length);
 
         // Populate input buffers for VST
-        if (_vstPlugin.PluginType != VstType.VSTi)
+        if (_vstPlugin.PluginType != PluginType.Instrument)
         {
             for (int i = 0; i < samplesRead / 2; i++)
             {
@@ -93,6 +94,8 @@ public class VstAudioProcessor : IAudioProcessor
     {
         if (DeleteRequested) return; // Skip processing if the plugin is flagged for deletion
 
+        VstPlugin.MidiHandler.ProcessPendingEvents();
+
         if (!_buffersInitialized)
         {
             InitializeBuffers(samplesRead / 2);
@@ -123,8 +126,4 @@ public class VstAudioProcessor : IAudioProcessor
 
         return null;
     }
-
-    public bool Enabled { get; set; } = true;
-    public bool DeleteRequested { get; set; }
-    public bool DuplicateRequested { get; set; }
 }

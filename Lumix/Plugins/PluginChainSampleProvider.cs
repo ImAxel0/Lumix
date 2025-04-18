@@ -7,17 +7,17 @@ namespace Lumix.Plugins;
 
 public class PluginChainSampleProvider : ISampleProvider
 {
-    private IAudioProcessor _pluginInstrument;
+    private IPlugin _pluginInstrument;
     /// <summary>
     /// The Instrument of this chain if it's a midi track
     /// </summary>
-    public IAudioProcessor PluginInstrument => _pluginInstrument;
+    public IPlugin PluginInstrument => _pluginInstrument;
 
-    private List<IAudioProcessor> _fxPlugins = new() { new UtilityPlugin(), new SimpleEqPlugin() };
+    private List<IPlugin> _fxPlugins = new() { new UtilityPlugin(), new SimpleEqPlugin() };
     /// <summary>
     /// Effects plugins chain
     /// </summary>
-    public List<IAudioProcessor> FxPlugins => _fxPlugins;
+    public List<IPlugin> FxPlugins => _fxPlugins;
 
     private readonly ISampleProvider source;
     public WaveFormat WaveFormat => source.WaveFormat;
@@ -27,17 +27,21 @@ public class PluginChainSampleProvider : ISampleProvider
         this.source = source;
     }
 
-    public void AddPlugin(IAudioProcessor plugin)
+    public void AddPlugin(IPlugin plugin)
     {
-        if (plugin is VstAudioProcessor vstPlugin && vstPlugin.VstPlugin.PluginType == VstType.VSTi)
+        if (plugin is VstPlugin vstPlugin && vstPlugin.PluginType == PluginType.Instrument)
         {
             // Dispose of the current instrument if it exists
-            if (_pluginInstrument != null && _pluginInstrument is VstAudioProcessor currentVstInstrument)
+            if (_pluginInstrument != null && _pluginInstrument is VstPlugin currentVstInstrument)
             {
-                currentVstInstrument.DeleteRequested = true;
-                currentVstInstrument.VstPlugin.Dispose(vstPlugin.VstPlugin.PluginWindow.Handle != currentVstInstrument.VstPlugin.PluginWindow.Handle);
+                currentVstInstrument.DisposeVST(vstPlugin.PluginWindow.Handle != currentVstInstrument.PluginWindow.Handle);
             }
 
+            _pluginInstrument = plugin;
+        }
+        else if (plugin.PluginType == PluginType.Instrument)
+        {
+            _pluginInstrument?.Dispose();
             _pluginInstrument = plugin;
         }
         else
@@ -46,27 +50,13 @@ public class PluginChainSampleProvider : ISampleProvider
         }
     }
 
-    public void RemovePlugin(IAudioProcessor target)
+    public void RemovePlugin(IPlugin target)
     {
+        target.Dispose();
         if (target == _pluginInstrument)
-        {
-            if (target is VstAudioProcessor vstInstrument)
-            {
-                vstInstrument.DeleteRequested = true;
-                vstInstrument.VstPlugin.Dispose();
-            }
             _pluginInstrument = null;
-        }
         else
-        {
             _fxPlugins.Remove(target);
-
-            if (target is VstAudioProcessor vstFxPlugin)
-            {
-                vstFxPlugin.DeleteRequested = true;
-                vstFxPlugin.VstPlugin.Dispose();
-            }
-        }
     }
 
     public void RemoveAllPlugins()
@@ -91,7 +81,7 @@ public class PluginChainSampleProvider : ISampleProvider
         }
     }
 
-    private void ProcessAudio(IAudioProcessor plugin, ref float[] buffer, int offset, int count, int samplesRead)
+    private void ProcessAudio(IPlugin plugin, ref float[] buffer, int offset, int count, int samplesRead)
     {
         // Create a temporary buffer to hold the processed data
         float[] tempBuffer = new float[count];

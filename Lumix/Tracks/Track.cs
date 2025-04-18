@@ -155,12 +155,16 @@ public abstract class Track
         ImGui.GetWindowDrawList().AddRectFilled(selectionAreaStart, selectionAreaEnd, ImGui.GetColorU32(ImGuiTheme.SelectionCol));
 
         // REMEMBER TO CHANGE THIS IMPLEMENTATION
-        var vstPlugin = Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-        vstPlugin?.PluginWindow.PumpEvents();
+        if (Engine.PluginChainSampleProvider.PluginInstrument is VstPlugin plug)
+        {
+            plug.PluginWindow?.PumpEvents();
+        }
         Engine.PluginChainSampleProvider.FxPlugins.ForEach(plugin =>
         {
-            var vstPlugin = plugin.GetPlugin<VstPlugin>();
-            vstPlugin?.PluginWindow.PumpEvents();
+            if (plugin is VstPlugin plug)
+            {
+                plug.PluginWindow?.PumpEvents();
+            }
         });
 
         float windowPosX = ImGui.GetWindowPos().X;
@@ -204,7 +208,7 @@ public abstract class Track
                 {
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
-                        var pluginInstance = SidebarView.DraggedBuiltInPlugin as IAudioProcessor;
+                        var pluginInstance = SidebarView.DraggedBuiltInPlugin as IPlugin;
                         Engine.PluginChainSampleProvider.AddPlugin(pluginInstance);
                         SidebarView.DraggedBuiltInPlugin = null;
                         _hasDropped = true;
@@ -219,12 +223,11 @@ public abstract class Track
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
                         var vst = new VstPlugin(SidebarView.DraggedFilePath);
-                        var vstProcessor = new VstAudioProcessor(vst);
                         if (TrackType == TrackType.Audio || TrackType == TrackType.Group)
                         {
-                            if (vst.PluginType != VstType.VSTi)
+                            if (vst.PluginType != PluginType.Instrument)
                             {
-                                Engine.PluginChainSampleProvider.AddPlugin(vstProcessor);
+                                Engine.PluginChainSampleProvider.AddPlugin(vst);
                             }
                             else
                             {
@@ -237,7 +240,7 @@ public abstract class Track
                         }
                         else if (TrackType == TrackType.Midi)
                         {
-                            Engine.PluginChainSampleProvider.AddPlugin(vstProcessor);
+                            Engine.PluginChainSampleProvider.AddPlugin(vst);
                         }
 
                         // Switch to devices view and select drop targeted track
@@ -689,17 +692,15 @@ public abstract class Track
                 track.Engine.PluginChainSampleProvider.RemoveAllPlugins();
                 foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
                 {
-                    var plug = fxPlugin.GetPlugin<VstPlugin>();
-                    if (plug != null)
+                    if (fxPlugin is VstPlugin plug)
                     {
                         var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
-                        var vstAudioProcessor = new VstAudioProcessor(vst);
-                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vst);
                     }
                     else
                     {
                         var builtIn = Activator.CreateInstance(fxPlugin.GetType());
-                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IPlugin);
                     }
                 }
             }
@@ -731,27 +732,23 @@ public abstract class Track
                 var vsti = this.Engine.PluginChainSampleProvider.PluginInstrument;
                 if (vsti != null)
                 {
-                    var plug = vsti.GetPlugin<VstPlugin>();
-                    if (plug != null)
+                    if (vsti is VstPlugin plug)
                     {
                         var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
-                        var vstAudioProcessor = new VstAudioProcessor(vst);
-                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vst);
                     }
                 }
                 foreach (var fxPlugin in this.Engine.PluginChainSampleProvider.FxPlugins)
                 {
-                    var plug = fxPlugin.GetPlugin<VstPlugin>();
-                    if (plug != null)
+                    if (fxPlugin is VstPlugin plug)
                     {
                         var vst = new VstPlugin(plug.PluginContext.Find<string>("PluginPath"));
-                        var vstAudioProcessor = new VstAudioProcessor(vst);
-                        track.Engine.PluginChainSampleProvider.AddPlugin(vstAudioProcessor);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(vst);
                     }
                     else
                     {
                         var builtIn = Activator.CreateInstance(fxPlugin.GetType());
-                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IAudioProcessor);
+                        track.Engine.PluginChainSampleProvider.AddPlugin(builtIn as IPlugin);
                     }
                 }
             }         

@@ -1,12 +1,18 @@
 ﻿using IconFonts;
 using ImGuiNET;
 using Lumix.ImGuiExtensions;
+using Melanchall.DryWetMidi.Core;
 using System.Numerics;
 
 namespace Lumix.Plugins.BuiltIn.Utilities;
 
-public class UtilityPlugin : BuiltInPlugin, IAudioProcessor
+public class UtilityPlugin : BuiltInPlugin
 {
+    public override bool Enabled { get; set; } = true;
+    public override string PluginName { get; set; } = "Utility";
+    public override PluginType PluginType => PluginType.Effect;
+    public override BuiltInCategory Category => BuiltInCategory.Utilities;
+
     private float _volumeUi;
     private float _panUi;
 
@@ -24,12 +30,7 @@ public class UtilityPlugin : BuiltInPlugin, IAudioProcessor
         _rightVolume = gain;
     }
 
-    public T? GetPlugin<T>() where T : class
-    {
-        return null;
-    }
-
-    public void Process(float[] inputBuffer, float[] outputBuffer, int samplesRead)
+    public override void Process(float[] inputBuffer, float[] outputBuffer, int samplesRead)
     {
         for (int i = 0; i < samplesRead; i += 2)
         {
@@ -137,10 +138,14 @@ public class UtilityPlugin : BuiltInPlugin, IAudioProcessor
         Fontaudio.Pop();
     }
 
-    public bool Enabled { get; set; } = true;
-    public bool DeleteRequested { get; set; }
-    public bool DuplicateRequested { get; set; }
-    public override string PluginName => "Utility";
-    public override BuiltInCategory Category => BuiltInCategory.Utilities;
+    public override void ReceiveMidiEvent(MidiEvent midiEvent)
+    {
+
+    }
+
+    public override void Dispose()
+    {
+
+    }
 }
 

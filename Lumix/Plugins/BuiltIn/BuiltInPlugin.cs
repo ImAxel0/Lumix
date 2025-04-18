@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Lumix.ImGuiExtensions;
 using Lumix.Views;
+using Melanchall.DryWetMidi.Core;
 using System.Numerics;
 
 namespace Lumix.Plugins.BuiltIn;
@@ -14,17 +15,36 @@ public enum BuiltInCategory
 /// <summary>
 /// Built in plugin data blueprint
 /// </summary>
-public abstract class BuiltInPlugin
+public abstract class BuiltInPlugin : IPlugin
 {
-    private string _pluginId = Guid.NewGuid().ToString();
-    public string PluginId => _pluginId;
-    public abstract string PluginName { get; }
     public abstract BuiltInCategory Category { get; }
+
+    /// <inheritdoc/>
+    public abstract bool Enabled { get; set; }
+
+    /// <inheritdoc/>
+    public abstract string PluginName { get; set; }
+
+    /// <inheritdoc/>
+    public string PluginId { get; } = Guid.NewGuid().ToString();
+
+    /// <inheritdoc/>
+    public abstract PluginType PluginType { get; }
+
+    /// <inheritdoc/>
+    public PluginKeyboard VKeyboard { get; }
+
+    /// <inheritdoc/>
+    public bool IsVst { get; } = false;
+
+    public abstract void Dispose();
+    public abstract void Process(float[] input, float[] output, int samplesRead);
+    public abstract void ReceiveMidiEvent(MidiEvent midiEvent);
 
     /// <summary>
     /// Renders the devices view rectangle
     /// </summary>
-    public void RenderRect(IAudioProcessor AudioProcessor)
+    public void RenderRect(IPlugin AudioProcessor)
     {
         bool selected = DevicesView.SelectedPlugins.Contains(AudioProcessor);
         Vector4 menuBarCol = selected ? ImGuiTheme.SelectionCol : new Vector4(0.28f, 0.28f, 0.28f, 1);

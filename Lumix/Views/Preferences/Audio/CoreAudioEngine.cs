@@ -4,13 +4,6 @@ using Lumix.Views.Arrangement;
 using Lumix.Views.Sidebar.Preview;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Versioning;
-using System.Text;
-using System.Threading.Tasks;
-using Vanara.PInvoke;
 
 namespace Lumix.Views.Preferences.Audio;
 
@@ -71,7 +64,7 @@ public static class CoreAudioEngine
         }
 
 #if LOCAL_DEV
-        AudioDevice = new AudioDevice(new AsioOut("M-Audio AIR 192 4 ASIO"));
+        AudioDevice = new AudioDevice(new AsioOut(1));
 #else
         var wasapiOK = devices.Any();
         if (!wasapiOK)

@@ -1,5 +1,4 @@
-﻿using Lumix.Plugins.VST;
-using IconFonts;
+﻿using IconFonts;
 using ImGuiNET;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
@@ -595,10 +594,8 @@ public class PianoRoll
 
                     if (_keysSound)
                     {
-                        var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-                        vstPlugin?.SendNoteOn(0, note.Data.NoteNumber, note.Data.Velocity);
+                        _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(new NoteOnEvent(note.Data.NoteNumber, note.Data.Velocity));
                         _lastSentNoteNum = note.Data.NoteNumber;
-                        //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, note.NoteNumber, note.Velocity);
                     }
                 }
             }
@@ -867,9 +864,9 @@ public class PianoRoll
             {
                 if (_keysSound)
                 {
-                    var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-                    vstPlugin?.SendNoteOn(0, RowToNoteNumber(row), 100);
-                    //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
+                    _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                        new NoteOnEvent((SevenBitNumber)RowToNoteNumber(row), (SevenBitNumber)100));
+
                     _lastSentNoteNum = RowToNoteNumber(row);
                 }
 
@@ -908,9 +905,8 @@ public class PianoRoll
             }
             else if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && _currentNote != null)
             {
-                var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-                vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
-                //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOff(0, _lastSentNoteNum, 0);
+                _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                    new NoteOffEvent((SevenBitNumber)_lastSentNoteNum, SevenBitNumber.MinValue));
 
                 _midiClip.UpdateClipData(new MidiClipData(ToMidiFile()));
 
@@ -952,11 +948,12 @@ public class PianoRoll
 
                     if (_keysSound)
                     {
-                        var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-                        vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
+                        _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOffEvent((SevenBitNumber)_lastSentNoteNum, SevenBitNumber.MinValue));
 
-                        vstPlugin?.SendNoteOn(0, RowToNoteNumber(row), 100);
-                        //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOnEvent((SevenBitNumber)RowToNoteNumber(row), (SevenBitNumber)100));
+
                         _lastSentNoteNum = RowToNoteNumber(row);
                     }
                 }
@@ -969,11 +966,12 @@ public class PianoRoll
 
                     if (_keysSound)
                     {
-                        var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-                        vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
+                        _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOffEvent((SevenBitNumber)_lastSentNoteNum, SevenBitNumber.MinValue));
 
-                        vstPlugin?.SendNoteOn(0, RowToNoteNumber(row), 100);
-                        //_midiTrack.MidiEngine.VstChainSampleProvider.VstInstrument?.VstPlugin.SendNoteOn(0, RowToNoteNumber(row), 100);
+                        _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                            new NoteOnEvent((SevenBitNumber)RowToNoteNumber(row), (SevenBitNumber)100));
+
                         _lastSentNoteNum = RowToNoteNumber(row);
                     }
                 }
@@ -1008,8 +1006,8 @@ public class PianoRoll
 
         if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !TimeLine.IsPlaying())
         {
-            var vstPlugin = _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.GetPlugin<VstPlugin>();
-            vstPlugin?.SendNoteOff(0, _lastSentNoteNum, 0);
+            _midiTrack.Engine.PluginChainSampleProvider.PluginInstrument?.ReceiveMidiEvent(
+                new NoteOffEvent((SevenBitNumber)_lastSentNoteNum, SevenBitNumber.MinValue));
         }
     }
     private Vector2? _selectionRectStart = null;
